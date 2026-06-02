@@ -1,0 +1,2614 @@
+---
+import '../styles/global.css';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visual CMS</title>
+</head>
+<body>
+  <slot />
+  <!-- ── Gallery Lightbox Runtime (usado nas páginas publicadas) ── -->
+  <style is:global>
+    #gallery-lightbox {
+      position: fixed; inset: 0; z-index: 100000;
+      background: rgba(0,0,0,0.92);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    #gallery-lightbox.active { opacity: 1; pointer-events: all; }
+    /* Área de zoom — overflow hidden para clipar a imagem ampliada */
+    #glb-zoom-area {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      max-width: 88vw; max-height: 85vh;
+      border-radius: 6px;
+      box-shadow: 0 8px 60px rgba(0,0,0,0.7);
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+    #glb-zoom-area.dragging { cursor: grabbing; }
+    #glb-zoom-area.zoomed  { cursor: grab; }
+    #gallery-lightbox img {
+      display: block;
+      max-width: 88vw; max-height: 85vh;
+      object-fit: contain;
+      border-radius: 6px;
+      transition: opacity 0.18s ease, transform 0.15s ease;
+      transform-origin: center center;
+      pointer-events: none;
+      user-select: none;
+    }
+    #gallery-lightbox img.fading { opacity: 0; }
+    .glb-btn {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,0.13); border: none; color: #fff;
+      font-size: 26px; width: 50px; height: 50px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; user-select: none; z-index: 10;
+    }
+    .glb-btn:hover { background: rgba(255,255,255,0.28); }
+    #glb-prev { left: 16px; }
+    #glb-next { right: 16px; }
+    #glb-close {
+      position: absolute; top: 14px; right: 16px;
+      background: rgba(255,255,255,0.13); border: none; color: #fff;
+      font-size: 18px; width: 38px; height: 38px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; z-index: 10;
+    }
+    #glb-close:hover { background: rgba(255,255,255,0.28); }
+    /* Controles de zoom */
+    #glb-zoom-controls {
+      position: absolute; top: 14px; left: 16px;
+      display: flex; gap: 6px; z-index: 10;
+    }
+    .glb-zoom-btn {
+      background: rgba(255,255,255,0.13); border: none; color: #fff;
+      font-size: 18px; width: 38px; height: 38px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; font-weight: 700; line-height: 1;
+    }
+    .glb-zoom-btn:hover { background: rgba(255,255,255,0.28); }
+    #glb-zoom-level {
+      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.5); font-size: 12px; font-family: sans-serif;
+      pointer-events: none; z-index: 10; display: none;
+    }
+    #glb-counter {
+      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.55); font-size: 13px; font-family: sans-serif; letter-spacing: 1px;
+      z-index: 10;
+    }
+    /* Botão fullscreen da galeria */
+    #glb-fullscreen {
+      position: absolute; top: 14px; right: 62px;
+      background: rgba(255,255,255,0.13); border: none; color: #fff;
+      font-size: 16px; width: 38px; height: 38px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; z-index: 10;
+    }
+    #glb-fullscreen:hover { background: rgba(255,255,255,0.28); }
+    /* Hint ESC no fullscreen */
+    #glb-esc-hint {
+      position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.75);
+      padding: 4px 14px; border-radius: 20px; font-size: 11px;
+      font-family: sans-serif; pointer-events: none; z-index: 11;
+      display: none; white-space: nowrap;
+    }
+    /* No fullscreen: imagem ocupa toda a tela sem bordas pretas */
+    #gallery-lightbox:fullscreen,
+    #gallery-lightbox:-webkit-full-screen {
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #gallery-lightbox:fullscreen #glb-zoom-area,
+    #gallery-lightbox:-webkit-full-screen #glb-zoom-area {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      border-radius: 0;
+      box-shadow: none;
+      background: #000;
+    }
+    #gallery-lightbox:fullscreen #glb-img,
+    #gallery-lightbox:-webkit-full-screen #glb-img {
+      width: auto;
+      height: auto;
+      max-width: 100vw;
+      max-height: 100vh;
+      object-fit: contain;
+      border-radius: 0;
+    }
+    /* Botões reposicionados em fullscreen (saem do flex-center, voltam ao absolute normal) */
+    #gallery-lightbox:fullscreen .glb-btn,
+    #gallery-lightbox:-webkit-full-screen .glb-btn {
+      position: absolute;
+      z-index: 10001;
+    }
+    #gallery-lightbox:fullscreen #glb-prev,
+    #gallery-lightbox:-webkit-full-screen #glb-prev  { left: 18px; }
+    #gallery-lightbox:fullscreen #glb-next,
+    #gallery-lightbox:-webkit-full-screen #glb-next  { right: 18px; }
+    #gallery-lightbox:fullscreen #glb-close,
+    #gallery-lightbox:-webkit-full-screen #glb-close,
+    #gallery-lightbox:fullscreen #glb-fullscreen,
+    #gallery-lightbox:-webkit-full-screen #glb-fullscreen,
+    #gallery-lightbox:fullscreen #glb-zoom-controls,
+    #gallery-lightbox:-webkit-full-screen #glb-zoom-controls,
+    #gallery-lightbox:fullscreen #glb-zoom-level,
+    #gallery-lightbox:-webkit-full-screen #glb-zoom-level,
+    #gallery-lightbox:fullscreen #glb-counter,
+    #gallery-lightbox:-webkit-full-screen #glb-counter,
+    #gallery-lightbox:fullscreen #glb-esc-hint,
+    #gallery-lightbox:-webkit-full-screen #glb-esc-hint {
+      z-index: 10001;
+    }
+    [data-gjs-type="photo-gallery"] [data-lb-index] {
+      cursor: pointer; overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    [data-gjs-type="photo-gallery"] [data-lb-index]:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+    }
+  </style>
+
+  <div id="gallery-lightbox">
+    <button class="glb-btn" id="glb-prev">&#8592;</button>
+    <div id="glb-zoom-area">
+      <img id="glb-img" src="" alt="" />
+      <div id="glb-info" style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.82));padding:28px 20px 16px;border-radius:0 0 6px 6px;display:none;pointer-events:none;">
+        <div id="glb-title" style="color:#fff;font-family:sans-serif;font-size:18px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,0.8);margin-bottom:4px;line-height:1.3;"></div>
+        <div id="glb-desc" style="color:rgba(255,255,255,0.82);font-family:sans-serif;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,0.7);line-height:1.5;white-space:pre-wrap;word-break:break-word;"></div>
+      </div>
+    </div>
+    <button class="glb-btn" id="glb-next">&#8594;</button>
+    <button id="glb-close">&#10005;</button>
+    <button id="glb-fullscreen" title="Tela cheia (F)">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+      </svg>
+    </button>
+    <div id="glb-esc-hint">Pressione ESC para sair da tela cheia</div>
+    <div id="glb-zoom-controls">
+      <button class="glb-zoom-btn" id="glb-zoom-in"  title="Ampliar">+</button>
+      <button class="glb-zoom-btn" id="glb-zoom-out" title="Reduzir">−</button>
+      <button class="glb-zoom-btn" id="glb-zoom-reset" title="Tamanho original" style="font-size:13px;">1:1</button>
+    </div>
+    <div id="glb-zoom-level"></div>
+    <div id="glb-counter"></div>
+  </div>
+
+  <script>
+    /* calcFsScale: compartilhada pela galeria e pelo modal de detalhe */
+    function calcFsScale(iw, ih, vw, vh) {
+      var isMobile = ('ontouchstart' in window) && vw < 1024;
+      var isPortrait = vh > vw;
+      if (isMobile && isPortrait) {
+        return vh / ih;   // mobile portrait: preenche altura, pan revela laterais
+      }
+      return Math.min(vw / iw, vh / ih);  // contain padrão
+    }
+
+    (function () {
+      let _imgs = [], _idx = 0;
+      // Estado de zoom e pan
+      let _scale = 1, _panX = 0, _panY = 0;
+      let _dragging = false, _dragStartX = 0, _dragStartY = 0, _panStartX = 0, _panStartY = 0;
+      // Touch (pinch)
+      let _touches = [], _lastPinchDist = 0;
+
+      const ov        = () => document.getElementById('gallery-lightbox');
+      const imgEl     = () => document.getElementById('glb-img');
+      const zoomArea  = () => document.getElementById('glb-zoom-area');
+      const info      = () => document.getElementById('glb-info');
+      const titleEl   = () => document.getElementById('glb-title');
+      const descEl    = () => document.getElementById('glb-desc');
+      const counter   = () => document.getElementById('glb-counter');
+      const zoomLevel = () => document.getElementById('glb-zoom-level');
+
+      const MIN_SCALE = 1, MAX_SCALE = 5, STEP = 0.5, MIN_SCALE_FS = 0.2;
+
+      function applyTransform(transition = false) {
+        const img = imgEl();
+        if (!img) return;
+        img.style.transition = transition
+          ? 'opacity 0.18s ease, transform 0.2s ease'
+          : 'opacity 0.18s ease';
+        img.style.transform = `scale(${_scale}) translate(${_panX / _scale}px, ${_panY / _scale}px)`;
+        const za = zoomArea();
+        za.classList.toggle('zoomed', _scale > 1);
+        const zlEl = zoomLevel();
+        if (_scale > 1) {
+          zlEl.style.display = 'block';
+          zlEl.textContent = Math.round(_scale * 100) + '%';
+        } else {
+          zlEl.style.display = 'none';
+        }
+      }
+
+      function resetZoom(transition = true) {
+        _scale = 1; _panX = 0; _panY = 0;
+        applyTransform(transition);
+      }
+
+
+      /* Calcula o fator de escala da imagem no fullscreen.
+         Mobile portrait → prioriza altura (fill height), pan horizontal habilitado.
+         Demais casos → contain padrão (cabe nos dois eixos). */
+      function clampPan() {
+        const img = imgEl();
+        const za  = zoomArea();
+        if (!img || !za) return;
+        if (isGlbFullscreen()) {
+          const vw = window.innerWidth, vh = window.innerHeight;
+          /* Usar naturalWidth/Height * calcFsScale para pan preciso
+             (img.offsetWidth = 100vw com objectFit → não reflete tamanho real do conteúdo) */
+          const iw   = img.naturalWidth  || vw;
+          const ih   = img.naturalHeight || vh;
+          const sc   = calcFsScale(iw, ih, vw, vh);
+          const baseW = iw * sc;
+          const baseH = ih * sc;
+          const rendW = baseW * _scale;
+          const rendH = baseH * _scale;
+          const maxPanX = Math.max(0, (rendW - vw) / 2);
+          const maxPanY = Math.max(0, (rendH - vh) / 2);
+          _panX = Math.max(-maxPanX, Math.min(maxPanX, _panX));
+          _panY = Math.max(-maxPanY, Math.min(maxPanY, _panY));
+        } else {
+          const maxPanX = (za.clientWidth  * (_scale - 1)) / 2;
+          const maxPanY = (za.clientHeight * (_scale - 1)) / 2;
+          _panX = Math.max(-maxPanX, Math.min(maxPanX, _panX));
+          _panY = Math.max(-maxPanY, Math.min(maxPanY, _panY));
+        }
+      }
+
+      function zoomBy(delta, transition = true) {
+        const minS = isGlbFullscreen() ? MIN_SCALE_FS : MIN_SCALE;
+        _scale = Math.max(minS, Math.min(MAX_SCALE, _scale + delta));
+        if (_scale <= 1) { _panX = 0; _panY = 0; }
+        else clampPan();
+        applyTransform(transition);
+      }
+
+      function open(imgs, idx) {
+        if (!imgs.length) return;
+        _imgs = imgs; _idx = idx;
+        resetZoom(false);
+        render(false);
+        ov().classList.add('active');
+      }
+      function close() {
+        if (isGlbFullscreen()) {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        }
+        ov().classList.remove('active');
+        resetZoom(false);
+      }
+      function nav(dir) {
+        if (_scale > 1) resetZoom(false);
+        imgEl().classList.add('fading');
+        setTimeout(() => { _idx = (_idx + dir + _imgs.length) % _imgs.length; render(true); }, 160);
+      }
+      function render(fromNav) {
+        const item = _imgs[_idx];
+        const imgElem = imgEl();
+        imgElem.src = item.src; imgElem.alt = item.alt || item.title || '';
+        /* Em fullscreen, objectFit já cuida do sizing — só resetar pan */
+        if (isGlbFullscreen()) {
+          _panX = 0; _panY = 0;
+          applyTransform(false);
+        }
+        counter().textContent = `${_idx + 1} / ${_imgs.length}`;
+        const hasTitle = item.title && item.title.trim();
+        const hasDesc  = item.desc  && item.desc.trim();
+        if (hasTitle || hasDesc) {
+          titleEl().textContent = item.title || ''; descEl().textContent = item.desc || '';
+          titleEl().style.display = hasTitle ? 'block' : 'none';
+          descEl().style.display  = hasDesc  ? 'block' : 'none';
+          info().style.display = 'block';
+        } else { info().style.display = 'none'; }
+        const show = _imgs.length > 1;
+        document.getElementById('glb-prev').style.display = show ? '' : 'none';
+        document.getElementById('glb-next').style.display = show ? '' : 'none';
+        if (fromNav) imgEl().classList.remove('fading');
+      }
+
+      // ── Botões de zoom ────────────────────────────────────────────────────
+      document.getElementById('glb-zoom-in').onclick    = () => zoomBy(+STEP);
+      document.getElementById('glb-zoom-out').onclick   = () => zoomBy(-STEP);
+      document.getElementById('glb-zoom-reset').onclick = () => resetZoom(true);
+
+      // ── Scroll do mouse para zoom ─────────────────────────────────────────
+      zoomArea().addEventListener('wheel', e => {
+        e.preventDefault();
+        zoomBy(e.deltaY < 0 ? +STEP : -STEP, false);
+      }, { passive: false });
+
+      // ── Duplo clique: zoom in / reset ─────────────────────────────────────
+      zoomArea().addEventListener('dblclick', () => {
+        _scale > 1 ? resetZoom(true) : zoomBy(+STEP * 2);
+      });
+
+      // ── Drag para pan (zoom > 1, ou fullscreen com imagem maior que tela) ──
+      zoomArea().addEventListener('mousedown', e => {
+        if (_scale <= 1 && !isGlbFullscreen()) return;
+        _dragging = true;
+        _dragStartX = e.clientX; _dragStartY = e.clientY;
+        _panStartX = _panX; _panStartY = _panY;
+        zoomArea().classList.add('dragging');
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', e => {
+        if (!_dragging) return;
+        _panX = _panStartX + (e.clientX - _dragStartX);
+        _panY = _panStartY + (e.clientY - _dragStartY);
+        clampPan();
+        applyTransform(false);
+      });
+      window.addEventListener('mouseup', () => {
+        _dragging = false;
+        zoomArea().classList.remove('dragging');
+      });
+
+      // ── Touch: pinch para zoom + drag para pan ────────────────────────────
+      zoomArea().addEventListener('touchstart', e => {
+        _touches = Array.from(e.touches);
+        if (_touches.length === 2) {
+          _lastPinchDist = Math.hypot(
+            _touches[1].clientX - _touches[0].clientX,
+            _touches[1].clientY - _touches[0].clientY
+          );
+        } else if (_touches.length === 1 && (_scale > 1 || isGlbFullscreen())) {
+          _dragging = true;
+          _dragStartX = _touches[0].clientX; _dragStartY = _touches[0].clientY;
+          _panStartX = _panX; _panStartY = _panY;
+        }
+      }, { passive: true });
+      zoomArea().addEventListener('touchmove', e => {
+        const touches = Array.from(e.touches);
+        if (touches.length === 2) {
+          e.preventDefault();
+          const dist = Math.hypot(
+            touches[1].clientX - touches[0].clientX,
+            touches[1].clientY - touches[0].clientY
+          );
+          const delta = (dist - _lastPinchDist) / 80;
+          _lastPinchDist = dist;
+          _scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, _scale + delta));
+          clampPan();
+          applyTransform(false);
+        } else if (touches.length === 1 && _dragging) {
+          e.preventDefault();
+          _panX = _panStartX + (touches[0].clientX - _dragStartX);
+          _panY = _panStartY + (touches[0].clientY - _dragStartY);
+          clampPan();
+          applyTransform(false);
+        }
+      }, { passive: false });
+      zoomArea().addEventListener('touchend', () => {
+        _dragging = false; _touches = [];
+      });
+
+      document.getElementById('glb-close').onclick = close;
+      document.getElementById('glb-prev').onclick  = () => nav(-1);
+      document.getElementById('glb-next').onclick  = () => nav(+1);
+
+      /* ── Fullscreen ── */
+      const glbFs    = document.getElementById('glb-fullscreen');
+      const glbEsc   = document.getElementById('glb-esc-hint');
+      const glbFsIn  = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
+      const glbFsOut = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>';
+
+      function isGlbFullscreen() {
+        var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+        return !!(fsEl && (fsEl === ov() || ov().contains(fsEl)));
+      }
+      function toggleGlbFullscreen() {
+        if (!isGlbFullscreen()) {
+          const el = ov();
+          (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+        } else {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        }
+      }
+      glbFs.onclick = toggleGlbFullscreen;
+
+      function applyGlbFullscreenStyles(fs) {
+        const lb       = ov();
+        const za       = zoomArea();
+        const img      = imgEl();
+        glbFs.innerHTML      = fs ? glbFsOut : glbFsIn;
+        glbFs.title          = fs ? 'Sair da tela cheia (ESC)' : 'Tela cheia (F)';
+        glbEsc.style.display = fs ? 'block' : 'none';
+        if (fs) {
+          lb.style.display        = 'flex';
+          lb.style.alignItems     = 'center';
+          lb.style.justifyContent = 'center';
+          lb.style.background     = '#000';
+          /* za: 100vw × 100vh — superfície real de drag */
+          za.style.position       = 'relative';
+          za.style.width          = '100vw';
+          za.style.height         = '100vh';
+          za.style.maxWidth       = 'none';
+          za.style.maxHeight      = 'none';
+          za.style.overflow       = 'hidden';
+          za.style.borderRadius   = '0';
+          za.style.boxShadow      = 'none';
+          za.style.background     = '#000';
+          za.style.cursor         = 'grab';
+          /* img: dimensões px via calcFsScale (Math.ceil evita gap de 1px) */
+          const vw = window.innerWidth, vh = window.innerHeight;
+          const iw  = img.naturalWidth  || img.width  || vw;
+          const ih  = img.naturalHeight || img.height || vh;
+          const sc  = calcFsScale(iw, ih, vw, vh);
+          img.style.width         = Math.ceil(iw * sc) + 'px';
+          img.style.height        = Math.ceil(ih * sc) + 'px';
+          img.style.maxWidth      = 'none';
+          img.style.maxHeight     = 'none';
+          img.style.objectFit     = 'none';
+          img.style.borderRadius  = '0';
+          _panX = 0; _panY = 0;
+          applyTransform(false);
+        } else {
+          lb.style.display        = '';
+          lb.style.alignItems     = '';
+          lb.style.justifyContent = '';
+          lb.style.background     = '';
+          za.style.position       = '';
+          za.style.width          = '';
+          za.style.height         = '';
+          za.style.maxWidth       = '';
+          za.style.maxHeight      = '';
+          za.style.overflow       = '';
+          za.style.borderRadius   = '';
+          za.style.boxShadow      = '';
+          za.style.cursor         = '';
+          img.style.width         = '';
+          img.style.height        = '';
+          img.style.maxWidth      = '';
+          img.style.maxHeight     = '';
+          img.style.objectFit     = '';
+          img.style.borderRadius  = '';
+          _panX = 0; _panY = 0;
+          applyTransform(false);
+        }
+      }
+
+      document.addEventListener('fullscreenchange', () => {
+        applyGlbFullscreenStyles(isGlbFullscreen());
+      });
+      document.addEventListener('webkitfullscreenchange', () => {
+        applyGlbFullscreenStyles(isGlbFullscreen());
+      });
+      ov().addEventListener('click', e => { if (e.target === ov()) close(); });
+      document.addEventListener('keydown', e => {
+        if (!ov().classList.contains('active')) return;
+        if (e.key === 'ArrowRight') nav(+1);
+        if (e.key === 'ArrowLeft')  nav(-1);
+        if (e.key === 'Escape')     close();
+        if (e.key === '+' || e.key === '=') zoomBy(+STEP);
+        if (e.key === '-')                  zoomBy(-STEP);
+        if (e.key === '0')                  resetZoom(true);
+        if (e.key === 'f' || e.key === 'F') toggleGlbFullscreen();
+      });
+      function wireGalleries() {
+        document.querySelectorAll('[data-gjs-type="photo-gallery"]').forEach(gallery => {
+          // ── 1. Parsear data-images (suporta URL-encoded e JSON puro) ──────────
+          let imgs = [];
+          const raw = gallery.getAttribute('data-images');
+          if (raw) {
+            try { imgs = JSON.parse(decodeURIComponent(raw)); } catch(e) {
+              try { imgs = JSON.parse(raw); } catch(e2) {
+                console.warn('[Gallery] Erro ao parsear data-images:', e2);
+              }
+            }
+          }
+          if (!imgs.length) return;
+
+          // ── 2. Se o grid já foi renderizado (data-lb-index existentes), só conecta ──
+          const existingThumbs = gallery.querySelectorAll('[data-lb-index]');
+          if (existingThumbs.length) {
+            existingThumbs.forEach(thumb => {
+              const idx = parseInt(thumb.getAttribute('data-lb-index'), 10);
+              thumb.style.cursor = 'pointer';
+              thumb.addEventListener('click', e => { e.stopPropagation(); open(imgs, idx); });
+            });
+            return;
+          }
+
+          // ── 3. Grid vazio: construir o grid de miniaturas no DOM ─────────────
+          const cols   = parseInt(gallery.getAttribute('data-columns') || '3', 10);
+          const gap    = gallery.getAttribute('data-gap')    || '8px';
+          const radius = gallery.getAttribute('data-radius') || '6px';
+
+          // Limpar qualquer conteúdo residual
+          gallery.innerHTML = '';
+
+          // Container grid responsivo
+          const grid = document.createElement('div');
+          grid.style.cssText = [
+            'display:grid',
+            'grid-template-columns:repeat(' + cols + ',1fr)',
+            'gap:' + gap,
+            'width:100%',
+          ].join(';');
+
+          imgs.forEach((item, i) => {
+            const cell = document.createElement('div');
+            cell.setAttribute('data-lb-index', i);
+            cell.style.cssText = [
+              'position:relative',
+              'overflow:hidden',
+              'border-radius:' + radius,
+              'cursor:pointer',
+              'aspect-ratio:1/1',
+              'background:#111',
+            ].join(';');
+
+            const img = document.createElement('img');
+            img.src = item.src;
+            img.alt = item.alt || item.title || '';
+            img.loading = 'lazy';
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s ease;pointer-events:none;';
+
+            // Hover zoom
+            cell.addEventListener('mouseenter', () => img.style.transform = 'scale(1.05)');
+            cell.addEventListener('mouseleave', () => img.style.transform = '');
+
+            // Overlay com título
+            if (item.title) {
+              const overlay = document.createElement('div');
+              overlay.style.cssText = [
+                'position:absolute',
+                'bottom:0',
+                'left:0',
+                'right:0',
+                'background:linear-gradient(transparent,rgba(0,0,0,0.75))',
+                'color:#fff',
+                'font-family:sans-serif',
+                'font-size:13px',
+                'font-weight:600',
+                'padding:20px 10px 8px',
+                'pointer-events:none',
+                'line-height:1.3',
+              ].join(';');
+              overlay.textContent = item.title;
+              cell.appendChild(overlay);
+            }
+
+            cell.appendChild(img);
+            cell.addEventListener('click', e => { e.stopPropagation(); open(imgs, i); });
+            grid.appendChild(cell);
+          });
+
+          gallery.appendChild(grid);
+        });
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireGalleries);
+      else wireGalleries();
+    })();
+  </script>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       Virtual Tour 360 — Runtime público
+       • Foto 360°  → Pannellum
+       • Vídeo 360° → A-Frame
+       • Hotspot video-flat  → tooltip nativo Pannellum
+       • Hotspot video-modal → modal overlay com player completo
+       • Hotspot video-wall  → vídeo em plano 3D com perspectiva (A-Frame overlay)
+  ═════════════════════════════════════════════════════════════════ -->
+  <link rel="stylesheet" href="/vendor/pannellum.min.css" />
+  <script is:inline src="/vendor/pannellum.min.js"></script>
+  <!-- A-Frame: tenta local primeiro, CDN como fallback síncrono -->
+  <!-- O npm install copia o arquivo para /vendor/aframe.min.js automaticamente -->
+  <script is:inline>
+    // Verificar se o arquivo local existe antes de tentar carregar
+    // Se não existir, usa o CDN diretamente de forma síncrona
+    window.__aframeReady = false;
+    window.__aframeFailed = false;
+
+    function __loadAframeCDN() {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/aframe@1.7.1/dist/aframe.min.js';
+      s.onload  = function() { window.__aframeReady = true; };
+      s.onerror = function() { window.__aframeFailed = true; console.warn('[VT] A-Frame não pôde ser carregado. Vídeo 360° indisponível.'); };
+      document.head.appendChild(s);
+    }
+
+    // Tenta carregar local; em caso de erro (404), cai no CDN
+    var __aframeLocal = document.createElement('script');
+    __aframeLocal.src = '/vendor/aframe.min.js';
+    __aframeLocal.onload  = function() { window.__aframeReady = true; };
+    __aframeLocal.onerror = function() { __loadAframeCDN(); };
+    document.head.appendChild(__aframeLocal);
+  </script>
+
+  <!-- Modal de imagem de detalhe — estrutura idêntica ao lightbox da galeria -->
+  <div id="vt-img-modal" aria-hidden="true">
+    <div id="vt-img-zoom-area">
+      <img id="vt-img-modal-img" src="" alt="" />
+      <div id="vt-img-modal-info">
+        <div id="vt-img-modal-title"></div>
+        <div id="vt-img-modal-desc"></div>
+      </div>
+    </div>
+    <div id="vt-img-zoom-controls">
+      <button class="vt-img-zoom-btn" id="vt-img-zoom-in"    title="Ampliar">+</button>
+      <button class="vt-img-zoom-btn" id="vt-img-zoom-out"   title="Reduzir">−</button>
+      <button class="vt-img-zoom-btn" id="vt-img-zoom-reset" title="Tamanho original" style="font-size:13px;">1:1</button>
+    </div>
+    <div id="vt-img-zoom-level"></div>
+    <button id="vt-img-modal-close" title="Fechar">&#10005;</button>
+    <button id="vt-img-modal-fullscreen" title="Tela cheia (F)">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+      </svg>
+    </button>
+    <div id="vt-img-modal-esc-hint">Pressione ESC para sair da tela cheia</div>
+  </div>
+
+  <!-- Modal de vídeo plano (hotspot video-modal) -->
+  <div id="vt-video-modal" aria-hidden="true" style="
+    display:none; position:fixed; inset:0; z-index:10000;
+    background:rgba(0,0,0,0.93); align-items:center;
+    justify-content:center; flex-direction:column;">
+    <button id="vt-vmod-close" title="Fechar" style="
+      position:absolute; top:16px; right:18px;
+      background:rgba(255,255,255,0.15); border:none; color:#fff;
+      font-size:20px; width:42px; height:42px; border-radius:50%;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
+    <video id="vt-vmod-player" controls playsinline style="
+      max-width:90vw; max-height:80vh; border-radius:8px;
+      box-shadow:0 8px 60px rgba(0,0,0,0.8); background:#000; outline:none;"></video>
+    <div id="vt-vmod-title" style="
+      color:rgba(255,255,255,0.65); font-family:sans-serif;
+      font-size:13px; margin-top:12px; text-align:center;"></div>
+  </div>
+
+  <style is:global>
+    #vt-video-modal.active { display:flex !important; }
+
+    /* ── Modal de imagem de detalhe — layout idêntico ao lightbox da galeria ── */
+    #vt-img-modal {
+      display: none;
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(0,0,0,0.92);
+      align-items: center; justify-content: center;
+    }
+    #vt-img-modal.active { display: flex !important; }
+
+    /* Área de zoom — idêntica ao #glb-zoom-area */
+    #vt-img-zoom-area {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      max-width: 88vw; max-height: 85vh;
+      border-radius: 6px;
+      box-shadow: 0 8px 60px rgba(0,0,0,0.7);
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+    #vt-img-zoom-area.dragging { cursor: grabbing; }
+    #vt-img-zoom-area.zoomed   { cursor: grab; }
+
+    #vt-img-modal-img {
+      display: block;
+      max-width: 88vw; max-height: 85vh;
+      object-fit: contain;
+      border-radius: 6px;
+      transition: opacity 0.18s ease, transform 0.15s ease;
+      transform-origin: center center;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Info dentro da imagem — idêntico ao #glb-info */
+    #vt-img-modal-info {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.82));
+      padding: 28px 20px 16px;
+      border-radius: 0 0 6px 6px;
+      display: none;
+      pointer-events: none;
+    }
+    #vt-img-modal-title {
+      color: #fff; font-family: sans-serif; font-size: 18px; font-weight: 700;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8); margin-bottom: 4px; line-height: 1.3;
+    }
+    #vt-img-modal-desc {
+      color: rgba(255,255,255,0.82); font-family: sans-serif; font-size: 13px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.7); line-height: 1.5;
+      white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* Botão fechar — position:absolute no modal (fora do zoom-area), canto sup. direito */
+    #vt-img-modal-close {
+      position: absolute; top: 14px; right: 16px;
+      background: rgba(255,255,255,0.13); border: none; color: #fff;
+      font-size: 18px; width: 38px; height: 38px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; z-index: 10;
+    }
+    #vt-img-modal-close:hover { background: rgba(255,255,255,0.28); }
+    /* Botão fullscreen — à esquerda do botão fechar */
+    #vt-img-modal-fullscreen {
+      position: absolute; top: 14px; right: 62px;
+      background: rgba(255,255,255,0.13); border: none; color: #fff;
+      font-size: 16px; width: 38px; height: 38px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; z-index: 10;
+    }
+    #vt-img-modal-fullscreen:hover { background: rgba(255,255,255,0.28); }
+    /* Hint ESC */
+    #vt-img-modal-esc-hint {
+      position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.75);
+      padding: 4px 14px; border-radius: 20px; font-size: 11px;
+      font-family: sans-serif; pointer-events: none; z-index: 11;
+      display: none; white-space: nowrap;
+    }
+    /* No fullscreen: imagem maximizada sem bordas pretas */
+    #vt-img-modal:fullscreen,
+    #vt-img-modal:-webkit-full-screen {
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #vt-img-modal:fullscreen #vt-img-zoom-area,
+    #vt-img-modal:-webkit-full-screen #vt-img-zoom-area {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      border-radius: 0;
+      box-shadow: none;
+      background: #000;
+    }
+    #vt-img-modal:fullscreen #vt-img-modal-img,
+    #vt-img-modal:-webkit-full-screen #vt-img-modal-img {
+      width: auto;
+      height: auto;
+      max-width: 100vw;
+      max-height: 100vh;
+      object-fit: contain;
+      border-radius: 0;
+    }
+    /* Botões e controles visíveis sobre a imagem no fullscreen */
+    #vt-img-modal:fullscreen #vt-img-modal-close,
+    #vt-img-modal:-webkit-full-screen #vt-img-modal-close,
+    #vt-img-modal:fullscreen #vt-img-modal-fullscreen,
+    #vt-img-modal:-webkit-full-screen #vt-img-modal-fullscreen,
+    #vt-img-modal:fullscreen #vt-img-zoom-controls,
+    #vt-img-modal:-webkit-full-screen #vt-img-zoom-controls,
+    #vt-img-modal:fullscreen #vt-img-zoom-level,
+    #vt-img-modal:-webkit-full-screen #vt-img-zoom-level,
+    #vt-img-modal:fullscreen #vt-img-modal-esc-hint,
+    #vt-img-modal:-webkit-full-screen #vt-img-modal-esc-hint {
+      z-index: 10001;
+    }
+
+    /* Controles de zoom — position:absolute no modal, canto sup. esquerdo */
+    #vt-img-zoom-controls {
+      position: absolute; top: 14px; left: 16px;
+      display: flex; gap: 6px; z-index: 10;
+    }
+    .vt-img-zoom-btn {
+      background: rgba(255,255,255,0.13); border: none; color: #fff;
+      font-size: 18px; width: 38px; height: 38px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; font-weight: 700; line-height: 1;
+    }
+    .vt-img-zoom-btn:hover { background: rgba(255,255,255,0.28); }
+
+    /* Nível de zoom — position:absolute no modal, centro superior */
+    #vt-img-zoom-level {
+      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.5); font-size: 12px; font-family: sans-serif;
+      pointer-events: none; z-index: 10; display: none;
+    }
+
+    /* ── Virtual Tour container ────────────────────────────────── */
+    [data-gjs-type="virtual-tour"] {
+      position:relative; width:100%;
+      font-family:sans-serif; background:#0d0d1a; overflow:hidden;
+    }
+
+    /* Wrapper com altura explícita — Pannellum e A-Frame precisam de px reais */
+    .vt-viewer-wrap { position:relative; width:100%; height:500px; overflow:hidden; }
+
+    /* Pannellum preenche o wrapper */
+    .vt-pannellum-container { position:absolute; inset:0; background:#000; }
+
+    /* A-Frame preenche o wrapper */
+    .vt-aframe-container { position:absolute; inset:0; background:#000; }
+    .vt-aframe-container a-scene { width:100%; height:100%; }
+
+    /* Loading overlay do vídeo panorâmico */
+    .vt-video-loading {
+      position: absolute; inset: 0; z-index: 25;
+      background: #000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+      transition: opacity 0.5s ease;
+    }
+    .vt-video-loading.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .vt-spinner {
+      width: 48px; height: 48px;
+      border: 4px solid rgba(255,255,255,0.15);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: vt-spin 0.9s linear infinite;
+    }
+    @keyframes vt-spin { to { transform: rotate(360deg); } }
+    .vt-loading-label {
+      color: rgba(255,255,255,0.7);
+      font-family: sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+    }
+    .vt-loading-progress {
+      width: 140px; height: 3px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .vt-loading-progress-bar {
+      height: 100%;
+      background: #fff;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Controles A-Frame sobrepostos — canto superior direito */
+    .vt-aframe-controls {
+      position:absolute; top:10px; right:10px; left:auto; bottom:auto;
+      transform:none;
+      display:flex; gap:8px; z-index:20; align-items:center;
+    }
+    /* Sem thumbBar: mesma posição canto superior direito */
+    .vt-viewer-wrap:not(:has(.vt-thumbnails)) .vt-aframe-controls {
+      top: 10px; right: 10px; bottom: auto;
+    }
+
+    /* Controles customizados da cena Pannellum — canto superior direito */
+    .vt-pnlm-controls {
+      position:absolute; top:10px; right:10px;
+      display:flex; gap:8px; z-index:20; align-items:center;
+    }
+    /* Sem thumbBar: posição do sceneInfo mais baixa */
+    .vt-viewer-wrap:not(:has(.vt-thumbnails)) .vt-scene-info {
+      bottom: 14px;
+    }
+    /* Ocultar controles nativos do Pannellum (zoom e fullscreen) — usamos os customizados */
+    .pnlm-controls-container { display:none !important; }
+    .vt-aframe-btn {
+      background:rgba(0,0,0,0.65); border:none; color:#fff;
+      width:38px; height:38px; border-radius:50%;
+      cursor:pointer; font-family:sans-serif;
+      backdrop-filter:blur(4px); transition:background .2s;
+      display:flex; align-items:center; justify-content:center;
+      padding:0;
+    }
+    .vt-aframe-btn:hover { background:rgba(0,0,0,0.85); }
+    .vt-aframe-btn svg { width:18px; height:18px; flex-shrink:0; }
+
+    /* Hotspot de navegação de cena — estilo seta walk */
+    /* Hotspot de navegação de cena — seta estilo padronizado */
+    /* ── Hotspot de navegação de cena ── */
+    /* Escopo restrito ao pnlm-render-container para não vazar para o canvas */
+    /* Hotspot de cena custom — base */
+    .pnlm-render-container .vt-hs-scene-custom {
+      cursor: pointer !important;
+      background: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      overflow: visible !important;
+      width: 30px !important;
+      height: 30px !important;
+    }
+    /* O pnlm-tooltip é o container onde o createTooltipFunc injeta os elementos.
+       Precisa ser visível e aceitar pointer-events para o clique funcionar. */
+    .pnlm-render-container .vt-hs-scene-custom .pnlm-tooltip {
+      display: block !important;
+      position: static !important;
+      width: auto !important;
+      height: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      pointer-events: auto !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    /* O span dentro do tooltip (criado pelo Pannellum) não deve aparecer */
+    .pnlm-render-container .vt-hs-scene-custom .pnlm-tooltip > span:not(.vt-hs-icon):not(.vt-hs-label) {
+      display: none !important;
+    }
+    /* Ícone SVG */
+    .pnlm-render-container .vt-hs-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform .18s ease;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.7));
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+    }
+    .pnlm-render-container .vt-hs-scene-custom:hover .vt-hs-icon {
+      transform: scale(1.2);
+      filter: drop-shadow(0 3px 8px rgba(0,0,0,0.8));
+    }
+    .pnlm-render-container .vt-hs-scene-custom:hover .vt-hs-icon svg circle {
+      fill: rgba(250,204,21,1.0);
+    }
+    /* Label — aparece abaixo do ícone no hover */
+    .pnlm-render-container .vt-hs-label {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 5px;
+      background: rgba(0,0,0,0.72);
+      color: #fff;
+      font-family: sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      transition: opacity .18s ease;
+    }
+    .pnlm-render-container .vt-hs-scene-custom:hover .vt-hs-label {
+      opacity: 1;
+    }
+
+    /* Badge de vídeo nas miniaturas */
+    .vt-thumb-video-badge {
+      position:absolute; top:3px; right:3px;
+      background:rgba(220,38,38,0.92); color:#fff;
+      font-size:9px; font-weight:700; padding:1px 5px;
+      border-radius:3px; line-height:1.5; pointer-events:none;
+    }
+
+    /* Thumbnails */
+    .vt-thumbnails {
+      display:flex; gap:6px; padding:8px 10px;
+      background:rgba(0,0,0,0.85); overflow-x:auto;
+      scrollbar-width:thin; scrollbar-color:#444 transparent;
+    }
+    .vt-thumbnails::-webkit-scrollbar { height:4px; }
+    .vt-thumbnails::-webkit-scrollbar-thumb { background:#444; border-radius:2px; }
+    /* Overlay mode: dentro do viewerWrap */
+    .vt-viewer-wrap .vt-thumbnails {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      z-index: 3;
+      background: linear-gradient(transparent, rgba(0,0,0,0.88));
+      padding: 24px 10px 10px;
+    }
+    .vt-thumb {
+      flex-shrink:0; width:70px; height:50px; border-radius:4px;
+      overflow:hidden; cursor:pointer; border:2px solid transparent;
+      transition:border-color .18s,transform .18s; position:relative;
+    }
+    .vt-thumb:hover { transform:scale(1.06); }
+    .vt-thumb.active { border-color:#3b82f6; }
+    .vt-thumb.active-video { border-color:#dc2626; }
+    .vt-thumb img { width:100%; height:100%; object-fit:cover; display:block; pointer-events:none; }
+    .vt-thumb-label {
+      position:absolute; bottom:0; left:0; right:0;
+      background:rgba(0,0,0,0.6); color:#fff; font-size:9px;
+      padding:2px 4px; white-space:nowrap; overflow:hidden;
+      text-overflow:ellipsis; pointer-events:none;
+    }
+
+    /* Overlay de título/descrição da cena — box pill no canto inferior esquerdo */
+    .vt-scene-info {
+      position: absolute;
+      bottom: 90px;   /* acima da barra de miniaturas (~84px) + margem */
+      left: 10px;     /* alinhado ao padding-left dos thumbnails */
+      background: rgba(0,0,0,0.62);
+      color: #fff;
+      padding: 7px 13px;
+      border-radius: 6px;
+      font-size: 13px;
+      pointer-events: none;
+      max-width: 60%;
+      z-index: 10;
+      backdrop-filter: blur(4px);
+      display: none;
+    }
+    /* Ocultar TODOS os elementos nativos do Pannellum que mostram título/info */
+    .pnlm-title-box,
+    .pnlm-about-msg,
+    .pnlm-load-button p,
+    .pnlm-author-box { display:none !important; }
+    /* Ocultar botão fullscreen nativo do Pannellum — a funcionalidade já está nos botões centrais */
+    .pnlm-fullscreen-toggle-button { display:none !important; }
+    .vt-scene-title { font-size:16px; font-weight:700; line-height:1.3; text-shadow:0 1px 4px rgba(0,0,0,0.8); }
+    .vt-scene-desc  { font-weight:400; font-size:13px; color:rgba(255,255,255,0.82); margin-top:4px; line-height:1.5; text-shadow:0 1px 3px rgba(0,0,0,0.7); }
+
+    /* video-flat: o hotspot é sempre visível no viewport (Pannellum controla via JS) */
+    /* video-flat: container inline-block com tamanho do trigger (estável)
+       O painel é position:absolute e não afeta offsetWidth/Height */
+    .vt-hs-video-flat { cursor: pointer; }
+    .vt-hs-video-flat .vt-vf-trigger { pointer-events: auto; }
+    .vt-hs-video-flat .vt-vf-panel   { pointer-events: auto; }
+
+    /* Modo showOnLoad: hotspot sempre visível */
+    .vt-hs-video-flat.vt-vf-always-open { visibility: visible !important; }
+
+    /* Ocultar qualquer controle nativo do A-Frame ou botão de enter-VR */
+    .a-enter-vr, .a-enter-ar,
+    .vt-aframe-container .a-enter-vr-button,
+    .vt-aframe-container [class*="enter-vr"],
+    .vt-aframe-container canvas::-webkit-media-controls { display:none !important; }
+  </style>
+
+  <script>
+    (function () {
+
+      /* ── Modal de imagem de detalhe — zoom+pan+pinch igual ao lightbox ── */
+      var imgModal      = document.getElementById('vt-img-modal');
+      var imgModalImg   = document.getElementById('vt-img-modal-img');
+      var imgModalInfo  = document.getElementById('vt-img-modal-info');
+      var imgModalTitle = document.getElementById('vt-img-modal-title');
+      var imgModalDesc  = document.getElementById('vt-img-modal-desc');
+      var imgModalClose = document.getElementById('vt-img-modal-close');
+      var imgZoomArea   = document.getElementById('vt-img-zoom-area');
+      var imgZoomLevel  = document.getElementById('vt-img-zoom-level');
+
+      // Estado de zoom e pan (independente do lightbox da galeria)
+      var _imgScale = 1, _imgPanX = 0, _imgPanY = 0;
+      var _imgDragging = false;
+      var _imgDragStartX = 0, _imgDragStartY = 0;
+      var _imgPanStartX  = 0, _imgPanStartY  = 0;
+      var _imgTouches = [], _imgLastPinchDist = 0;
+      var IMG_MIN = 1, IMG_MAX = 5, IMG_STEP = 0.5;
+      var IMG_MIN_FS = 0.2; // permite zoom-out no fullscreen
+
+      function imgApplyTransform(transition) {
+        imgModalImg.style.transition = transition
+          ? 'opacity 0.18s ease, transform 0.2s ease'
+          : 'opacity 0.18s ease';
+        imgModalImg.style.transform = 'scale(' + _imgScale + ') translate('
+          + (_imgPanX / _imgScale) + 'px, ' + (_imgPanY / _imgScale) + 'px)';
+        var isZoomed = _imgScale > 1;
+        imgZoomArea.classList.toggle('zoomed', isZoomed);
+        if (isZoomed) {
+          imgZoomLevel.style.display = 'block';
+          imgZoomLevel.textContent = Math.round(_imgScale * 100) + '%';
+        } else {
+          imgZoomLevel.style.display = 'none';
+        }
+      }
+
+      function imgResetZoom(transition) {
+        _imgScale = 1; _imgPanX = 0; _imgPanY = 0;
+        imgApplyTransform(transition !== false);
+      }
+
+      function imgClampPan() {
+        if (isImgFullscreen() && _imgFsW > 0) {
+          /* Fullscreen: usa dimensões px reais da imagem (mesma lógica da galeria)
+             → maxPanX > 0 em mobile portrait pois _imgFsW > vw */
+          var vw    = window.innerWidth,  vh    = window.innerHeight;
+          var rendW = _imgFsW * _imgScale, rendH = _imgFsH * _imgScale;
+          var maxX  = Math.max(0, (rendW - vw) / 2);
+          var maxY  = Math.max(0, (rendH - vh) / 2);
+          _imgPanX = Math.max(-maxX, Math.min(maxX, _imgPanX));
+          _imgPanY = Math.max(-maxY, Math.min(maxY, _imgPanY));
+        } else {
+          /* Modo normal: pan limitado pelo zoom do container */
+          var maxX2 = (imgZoomArea.clientWidth  * (_imgScale - 1)) / 2;
+          var maxY2 = (imgZoomArea.clientHeight * (_imgScale - 1)) / 2;
+          _imgPanX = Math.max(-maxX2, Math.min(maxX2, _imgPanX));
+          _imgPanY = Math.max(-maxY2, Math.min(maxY2, _imgPanY));
+        }
+      }
+
+      function imgZoomBy(delta, transition) {
+        var minScale = isImgFullscreen() ? IMG_MIN_FS : IMG_MIN;
+        _imgScale = Math.max(minScale, Math.min(IMG_MAX, _imgScale + delta));
+        if (_imgScale <= 1) { _imgPanX = 0; _imgPanY = 0; }
+        else imgClampPan();
+        imgApplyTransform(transition !== false);
+      }
+
+      // Botões de zoom
+      document.getElementById('vt-img-zoom-in').onclick    = function() { imgZoomBy(+IMG_STEP); };
+      document.getElementById('vt-img-zoom-out').onclick   = function() { imgZoomBy(-IMG_STEP); };
+      document.getElementById('vt-img-zoom-reset').onclick = function() { imgResetZoom(true); };
+
+      // Scroll do mouse para zoom
+      imgZoomArea.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        imgZoomBy(e.deltaY < 0 ? +IMG_STEP : -IMG_STEP, false);
+      }, { passive: false });
+
+      // Duplo clique: zoom in / reset
+      imgZoomArea.addEventListener('dblclick', function() {
+        _imgScale > 1 ? imgResetZoom(true) : imgZoomBy(+IMG_STEP * 2);
+      });
+
+      // Drag para pan (mouse) — também em fullscreen com scale=1
+      imgZoomArea.addEventListener('mousedown', function(e) {
+        if (_imgScale <= 1 && !isImgFullscreen()) return;
+        _imgDragging = true;
+        _imgDragStartX = e.clientX; _imgDragStartY = e.clientY;
+        _imgPanStartX  = _imgPanX;  _imgPanStartY  = _imgPanY;
+        imgZoomArea.classList.add('dragging');
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', function(e) {
+        if (!_imgDragging) return;
+        _imgPanX = _imgPanStartX + (e.clientX - _imgDragStartX);
+        _imgPanY = _imgPanStartY + (e.clientY - _imgDragStartY);
+        imgClampPan();
+        imgApplyTransform(false);
+      });
+      window.addEventListener('mouseup', function() {
+        if (!_imgDragging) return;
+        _imgDragging = false;
+        imgZoomArea.classList.remove('dragging');
+      });
+
+      // Touch: pinch para zoom + drag para pan
+      imgZoomArea.addEventListener('touchstart', function(e) {
+        _imgTouches = Array.from(e.touches);
+        if (_imgTouches.length === 2) {
+          _imgLastPinchDist = Math.hypot(
+            _imgTouches[1].clientX - _imgTouches[0].clientX,
+            _imgTouches[1].clientY - _imgTouches[0].clientY
+          );
+        } else if (_imgTouches.length === 1 && (_imgScale > 1 || isImgFullscreen())) {
+          _imgDragging   = true;
+          _imgDragStartX = _imgTouches[0].clientX;
+          _imgDragStartY = _imgTouches[0].clientY;
+          _imgPanStartX  = _imgPanX;
+          _imgPanStartY  = _imgPanY;
+        }
+      }, { passive: true });
+      imgZoomArea.addEventListener('touchmove', function(e) {
+        var touches = Array.from(e.touches);
+        if (touches.length === 2) {
+          e.preventDefault();
+          var dist = Math.hypot(
+            touches[1].clientX - touches[0].clientX,
+            touches[1].clientY - touches[0].clientY
+          );
+          var delta = (dist - _imgLastPinchDist) / 80;
+          _imgLastPinchDist = dist;
+          _imgScale = Math.max(IMG_MIN, Math.min(IMG_MAX, _imgScale + delta));
+          imgClampPan();
+          imgApplyTransform(false);
+        } else if (touches.length === 1 && _imgDragging) {
+          e.preventDefault();
+          _imgPanX = _imgPanStartX + (touches[0].clientX - _imgDragStartX);
+          _imgPanY = _imgPanStartY + (touches[0].clientY - _imgDragStartY);
+          imgClampPan();
+          imgApplyTransform(false);
+        }
+      }, { passive: false });
+      imgZoomArea.addEventListener('touchend', function() {
+        _imgDragging = false; _imgTouches = [];
+      });
+
+      function openImageModal(hs) {
+        imgModalImg.src = hs.imageUrl || '';
+        imgModalImg.alt = hs.text     || '';
+        imgResetZoom(false);
+
+        var hasTitle = hs.text      && hs.text.trim();
+        var hasDesc  = hs.imageDesc && hs.imageDesc.trim();
+        if (hasTitle || hasDesc) {
+          imgModalTitle.textContent   = hasTitle ? hs.text      : '';
+          imgModalDesc.textContent    = hasDesc  ? hs.imageDesc : '';
+          imgModalTitle.style.display = hasTitle ? 'block' : 'none';
+          imgModalDesc.style.display  = hasDesc  ? 'block' : 'none';
+          imgModalInfo.style.display  = 'block';
+        } else {
+          imgModalInfo.style.display = 'none';
+        }
+
+        imgModal.classList.add('active');
+        imgModal.setAttribute('aria-hidden', 'false');
+      }
+
+      /* ── Fullscreen do modal de imagem de detalhe ── */
+      var imgFsBtn  = document.getElementById('vt-img-modal-fullscreen');
+      var imgEscHint = document.getElementById('vt-img-modal-esc-hint');
+      var imgFsIn  = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
+      var imgFsOut = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>';
+
+      /* imgFakeFs: fullscreen simulado via CSS (usado quando o modal já está
+         dentro do fullscreen do tour — o browser não permite fullscreen aninhado) */
+      var _imgFakeFs = false;
+
+      function isImgFullscreen() {
+        var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+        return _imgFakeFs || !!(fsEl && (fsEl === imgModal || imgModal.contains(fsEl)));
+      }
+
+      /* _imgFsW/_imgFsH: dimensões px da imagem no fullscreen */
+      var _imgFsW = 0, _imgFsH = 0;
+
+      /* Aplica dimensões px com calcFsScale (idêntico à galeria).
+         Usa requestAnimationFrame até naturalWidth estar disponível. */
+      function imgApplyFsDimensions() {
+        var img = imgModalImg;
+        /* Se naturalWidth ainda não está disponível, tenta no próximo frame */
+        if (!img.naturalWidth) {
+          requestAnimationFrame(function() {
+            if (isImgFullscreen()) imgApplyFsDimensions();
+          });
+          return;
+        }
+        var vw  = window.innerWidth, vh = window.innerHeight;
+        var sc  = calcFsScale(img.naturalWidth, img.naturalHeight, vw, vh);
+        _imgFsW = Math.round(img.naturalWidth  * sc);
+        _imgFsH = Math.round(img.naturalHeight * sc);
+        img.style.width     = _imgFsW + 'px';
+        img.style.height    = _imgFsH + 'px';
+        img.style.maxWidth  = 'none';
+        img.style.maxHeight = 'none';
+        img.style.objectFit = 'none';
+        imgApplyTransform(false);
+      }
+
+      /* applyImgFsStyles: entrada/saída do fullscreen (nativo ou fake) */
+      function applyImgFsStyles(fs) {
+        var za  = document.getElementById('vt-img-zoom-area');
+        var img = imgModalImg;
+        imgFsBtn.innerHTML       = fs ? imgFsOut : imgFsIn;
+        imgFsBtn.title           = fs ? 'Sair da tela cheia (ESC)' : 'Tela cheia (F)';
+        imgEscHint.style.display = fs ? 'block' : 'none';
+        if (fs) {
+          imgModal.style.position       = 'fixed';
+          imgModal.style.inset          = '0';
+          imgModal.style.zIndex         = '2147483647';
+          imgModal.style.display        = 'flex';
+          imgModal.style.alignItems     = 'center';
+          imgModal.style.justifyContent = 'center';
+          imgModal.style.background     = '#000';
+          za.style.position     = 'relative';
+          za.style.width        = '100vw';
+          za.style.height       = '100vh';
+          za.style.maxWidth     = 'none';
+          za.style.maxHeight    = 'none';
+          za.style.overflow     = 'hidden';
+          za.style.borderRadius = '0';
+          za.style.boxShadow    = 'none';
+          za.style.background   = '#000';
+          za.style.cursor       = 'grab';
+          /* Contain provisório garante que a imagem seja visível enquanto
+             imgApplyFsDimensions aguarda naturalWidth via rAF */
+          img.style.width     = '100%';
+          img.style.height    = '100%';
+          img.style.maxWidth  = 'none';
+          img.style.maxHeight = 'none';
+          img.style.objectFit = 'contain';
+          img.style.borderRadius = '0';
+          _imgScale = 1; _imgPanX = 0; _imgPanY = 0;
+          imgApplyTransform(false);
+          /* Aplica dimensões px reais (com rAF se naturalWidth ainda não disponível) */
+          imgApplyFsDimensions();
+        } else {
+          imgModal.style.position       = '';
+          imgModal.style.inset          = '';
+          imgModal.style.zIndex         = '';
+          imgModal.style.display        = '';
+          imgModal.style.alignItems     = '';
+          imgModal.style.justifyContent = '';
+          imgModal.style.background     = '';
+          za.style.position     = '';
+          za.style.width        = ''; za.style.height      = '';
+          za.style.maxWidth     = ''; za.style.maxHeight   = '';
+          za.style.overflow     = '';
+          za.style.borderRadius = ''; za.style.boxShadow   = '';
+          za.style.background   = ''; za.style.cursor      = '';
+          img.style.width       = ''; img.style.height     = '';
+          img.style.maxWidth    = ''; img.style.maxHeight  = '';
+          img.style.objectFit   = ''; img.style.borderRadius = '';
+          _imgFsW = 0; _imgFsH = 0;
+          _imgScale = 1; _imgPanX = 0; _imgPanY = 0;
+          imgApplyTransform(false);
+        }
+      }
+
+      /* Ambos os modos usam a mesma função */
+      function applyImgFakeFs(fs)           { applyImgFsStyles(fs); }
+      function applyImgFullscreenStyles(fs) { applyImgFsStyles(fs); }
+
+      function toggleImgFullscreen() {
+        /* Se o modal está dentro do fullscreen do tour, usar fake fullscreen */
+        if (imgModal._vtFS) {
+          _imgFakeFs = !_imgFakeFs;
+          applyImgFakeFs(_imgFakeFs);
+          return;
+        }
+        /* Fullscreen nativo quando não há tour em fullscreen */
+        if (!isImgFullscreen()) {
+          (imgModal.requestFullscreen || imgModal.webkitRequestFullscreen).call(imgModal);
+        } else {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        }
+      }
+      imgFsBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleImgFullscreen();
+      });
+
+      /* Ao fechar o modal, garantir reset do fake-fullscreen */
+      document.addEventListener('fullscreenchange', function() {
+        if (!imgModal.classList.contains('active')) return;
+        if (!imgModal._vtFS) applyImgFullscreenStyles(isImgFullscreen());
+      });
+      document.addEventListener('webkitfullscreenchange', function() {
+        if (!imgModal.classList.contains('active')) return;
+        if (!imgModal._vtFS) applyImgFullscreenStyles(isImgFullscreen());
+      });
+
+      function closeImageModal() {
+        if (_imgFakeFs) {
+          /* Limpar fake-fullscreen inline styles antes de fechar */
+          _imgFakeFs = false;
+          applyImgFakeFs(false);
+        } else {
+          /* Atualizar apenas ícone do botão */
+          applyImgFullscreenStyles(false);
+        }
+        /* Sair do fullscreen nativo se necessário */
+        var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+        if (fsEl && (fsEl === imgModal || imgModal.contains(fsEl))) {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        }
+        imgModal.classList.remove('active');
+        imgModal.setAttribute('aria-hidden', 'true');
+        imgModalImg.src = '';
+        imgResetZoom(false);
+
+      }
+
+      imgModalClose.addEventListener('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        closeImageModal();
+      });
+      imgModal.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (e.target === imgModal) closeImageModal();
+      });
+      document.addEventListener('keydown', function(e) {
+        if (!imgModal.classList.contains('active')) return;
+        if (e.key === 'Escape') {
+          if (_imgFakeFs) { /* ESC sai do fake-fullscreen sem fechar o modal */
+            _imgFakeFs = false;
+            applyImgFakeFs(false);
+            e.stopPropagation();
+          } else {
+            closeImageModal();
+          }
+        }
+        if (e.key === '+' || e.key === '=')         imgZoomBy(+IMG_STEP);
+        if (e.key === '-')                          imgZoomBy(-IMG_STEP);
+        if (e.key === '0')                          imgResetZoom(true);
+        if (e.key === 'f' || e.key === 'F')         toggleImgFullscreen();
+      });
+
+      /* ── Modal de vídeo plano ─────────────────────────────────────────── */
+      var vmod        = document.getElementById('vt-video-modal');
+      var vmodPlayer  = document.getElementById('vt-vmod-player');
+      var vmodTitle   = document.getElementById('vt-vmod-title');
+      var vmodClose   = document.getElementById('vt-vmod-close');
+
+      function openVideoModal(hs) {
+        /* 1. Limpar o player completamente */
+        vmodPlayer.pause();
+        vmodPlayer.removeAttribute('src');
+        vmodPlayer.load();
+
+        /* 2. Configurar título e abrir modal */
+        vmodTitle.textContent = hs.text || '';
+        vmod.classList.add('active');
+        vmod.setAttribute('aria-hidden', 'false');
+
+        /* 3. Setar src APÓS o modal estar visível (evita tela preta em alguns browsers) */
+        requestAnimationFrame(function() {
+          vmodPlayer.src      = hs.videoUrl  || '';
+          vmodPlayer.loop     = !!hs.videoLoop;
+          vmodPlayer.muted    = !!hs.videoMuted;
+          vmodPlayer.controls = true;
+          vmodPlayer.load();
+
+          /* 4. Tentar play após browser indicar que pode reproduzir */
+          vmodPlayer.addEventListener('canplay', function onCanPlay() {
+            vmodPlayer.removeEventListener('canplay', onCanPlay);
+            if (vmod.classList.contains('active')) {
+              vmodPlayer.play().catch(function() {
+                /* Bloqueado pelo browser — controles já visíveis, usuário clica */
+              });
+            }
+          });
+        });
+      }
+      function closeVideoModal() {
+        vmod.classList.remove('active');
+        vmod.setAttribute('aria-hidden','true');
+        vmodPlayer.pause();
+        vmodPlayer.src = '';
+
+      }
+
+      vmodClose.addEventListener('click', closeVideoModal);
+      vmod.addEventListener('click', function(e){ if (e.target === vmod) closeVideoModal(); });
+      document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape' && vmod.classList.contains('active')) closeVideoModal();
+      });
+
+      /* ── Tour virtual ─────────────────────────────────────────────────── */
+      function initVirtualTours() {
+        document.querySelectorAll('[data-gjs-type="virtual-tour"]').forEach(function(el) {
+          var raw = el.getAttribute('data-tour');
+          if (!raw || el.dataset.vtInited) return;
+
+          var tourData;
+          try {
+            var enc     = el.getAttribute('data-tour-enc');
+            var jsonStr = enc === 'base64'
+              ? decodeURIComponent(escape(atob(raw)))
+              : decodeURIComponent(raw);
+            tourData = JSON.parse(jsonStr);
+          } catch(e) { console.warn('[VT] Erro ao decodificar tour:', e); return; }
+          if (!tourData || !tourData.scenes || !tourData.scenes.length) return;
+          el.dataset.vtInited = '1';
+
+          var showThumbs  = el.getAttribute('data-show-thumbs') !== 'false';
+          var tourHeight  = el.getAttribute('data-height') || '500px';
+
+          el.innerHTML = '';
+
+          /* Wrapper principal */
+          var viewerWrap = document.createElement('div');
+          viewerWrap.className    = 'vt-viewer-wrap';
+          viewerWrap.style.height = tourHeight;
+
+          /* Containers para Pannellum e A-Frame (criados sob demanda) */
+          var pannellumDiv = null;
+          var aframeDiv    = null;
+          var sceneInfo    = document.createElement('div');
+          sceneInfo.className = 'vt-scene-info';
+          viewerWrap.appendChild(sceneInfo);
+          el.appendChild(viewerWrap);
+
+          /* ── Handler GLOBAL de fullscreen para mover modais ─────────────
+             Pannellum coloca pannellumDiv (ou seu filho .pnlm-container) em
+             fullscreen. Quando isso acontece, elementos fora desse elemento
+             (como vt-video-modal e vt-img-modal) ficam invisíveis.
+             Solução: mover os modais para dentro do elemento em fullscreen. */
+          function vtIsTourFs() {
+            var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+            return !!(fsEl && viewerWrap.contains(fsEl));
+          }
+
+          function vtMoveModals(enter) {
+            var fsRoot = document.fullscreenElement || document.webkitFullscreenElement || viewerWrap;
+
+            /* Modais (vt-video-modal, vt-img-modal) */
+            ['vt-video-modal', 'vt-img-modal'].forEach(function(id) {
+              var m = document.getElementById(id);
+              if (!m) return;
+              if (enter) {
+                if (m._vtFS) return;
+                m._vtFS    = { parent: m.parentNode, next: m.nextSibling };
+                fsRoot.appendChild(m);
+                m.style.position = 'fixed';
+                m.style.zIndex   = '2147483647';
+              } else {
+                if (!m._vtFS) return;
+                if (id === 'vt-img-modal' && typeof _imgFakeFs !== 'undefined' && _imgFakeFs) {
+                  _imgFakeFs = false;
+                  if (typeof applyImgFakeFs === 'function') applyImgFakeFs(false);
+                }
+                m._vtFS.parent.insertBefore(m, m._vtFS.next || null);
+                m._vtFS          = null;
+                m.style.position = '';
+                m.style.zIndex   = '';
+              }
+            });
+
+            /* Barra de miniaturas — mover para fsRoot em qualquer fullscreen do tour.
+               Para foto 360: fsRoot é pannellumDiv (filho de viewerWrap) — thumbBar
+               precisa estar DENTRO de pannellumDiv para aparecer em fullscreen.
+               Para vídeo 360: fsRoot é viewerWrap — thumbBar já está lá, mas
+               movemos para garantir z-index correto acima do A-Frame. */
+            if (thumbBar) {
+              if (enter && !thumbBar._vtFS) {
+                thumbBar._vtFS = { parent: thumbBar.parentNode, next: thumbBar.nextSibling };
+                fsRoot.appendChild(thumbBar);
+                thumbBar.style.position = 'absolute';
+                thumbBar.style.bottom   = '0';
+                thumbBar.style.left     = '0';
+                thumbBar.style.right    = '0';
+                thumbBar.style.zIndex   = '10001';
+              } else if (!enter && thumbBar._vtFS) {
+                thumbBar._vtFS.parent.insertBefore(thumbBar, thumbBar._vtFS.next || null);
+                thumbBar._vtFS          = null;
+                thumbBar.style.position = '';
+                thumbBar.style.bottom   = '';
+                thumbBar.style.left     = '';
+                thumbBar.style.right    = '';
+                thumbBar.style.zIndex   = '';
+              }
+            }
+
+            /* Controles (pnlm e aframe) e sceneInfo — mover para fsRoot em fullscreen
+               Usamos fsRoot = pannellumDiv (foto) ou viewerWrap (vídeo).
+               Quando NOT enter: restaurar ao viewerWrap sem z-index inline. */
+            ['.vt-pnlm-controls', '.vt-aframe-controls'].forEach(function(sel) {
+              /* Buscar em todo o DOM (pode ter sido movido para fora do viewerWrap) */
+              var ctrl = document.querySelector(sel);
+              if (!ctrl) return;
+              if (enter && !ctrl._vtFS) {
+                ctrl._vtFS = { parent: ctrl.parentNode, next: ctrl.nextSibling };
+                fsRoot.appendChild(ctrl);
+              } else if (!enter && ctrl._vtFS) {
+                ctrl._vtFS.parent.insertBefore(ctrl, ctrl._vtFS.next || null);
+                ctrl._vtFS = null;
+              }
+            });
+
+            /* sceneInfo — mover para fsRoot em fullscreen */
+            if (sceneInfo) {
+              if (enter && !sceneInfo._vtFS) {
+                sceneInfo._vtFS = { parent: sceneInfo.parentNode, next: sceneInfo.nextSibling };
+                fsRoot.appendChild(sceneInfo);
+              } else if (!enter && sceneInfo._vtFS) {
+                sceneInfo._vtFS.parent.insertBefore(sceneInfo, sceneInfo._vtFS.next || null);
+                sceneInfo._vtFS = null;
+              }
+            }
+          }
+
+          function vtOnFsChange() {
+            vtMoveModals(vtIsTourFs());
+          }
+          document.addEventListener('fullscreenchange',        vtOnFsChange);
+          document.addEventListener('webkitfullscreenchange',  vtOnFsChange);
+
+          /* Barra de miniaturas */
+          var thumbBar = null;
+          if (showThumbs && tourData.scenes.length > 1) {
+            thumbBar = document.createElement('div');
+            thumbBar.className = 'vt-thumbnails';
+            /* Dentro do viewerWrap como overlay absoluto —
+               visível tanto no modo normal (posição absoluta sobre o panorama)
+               quanto em fullscreen (viewerWrap é o root do fullscreen de vídeo;
+               para foto Pannellum o vtMoveModals garante visibilidade). */
+            viewerWrap.appendChild(thumbBar);
+          }
+
+          /* Estado atual */
+          var currentSceneId = null;
+          var pannellumViewer = null;
+
+          /* ── Atualizar overlay de info ─────────────────────────────────── */
+          function updateSceneInfo(scene) {
+            var hasTitle = scene.title && scene.title.trim();
+            var hasDesc  = scene.desc  && scene.desc.trim();
+            if (hasTitle || hasDesc) {
+              sceneInfo.style.display = 'block';
+              sceneInfo.innerHTML =
+                (hasTitle ? '<div class="vt-scene-title">' + scene.title + '</div>' : '') +
+                (hasDesc  ? '<div class="vt-scene-desc">'  + scene.desc  + '</div>' : '');
+            } else {
+              sceneInfo.style.display = 'none';
+            }
+          }
+
+          /* ── Atualizar thumb ativa ─────────────────────────────────────── */
+          function activateThumb(sceneId, isVideo) {
+            if (!thumbBar) return;
+            thumbBar.querySelectorAll('.vt-thumb').forEach(function(t) {
+              t.classList.remove('active', 'active-video');
+            });
+            var active = thumbBar.querySelector('[data-scene-id="' + sceneId + '"]');
+            if (active) {
+              active.classList.add(isVideo ? 'active-video' : 'active');
+              active.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+            }
+          }
+
+          /* ── Destruir A-Frame sem deixar rastros ───────────────────────── */
+          function destroyAframe() {
+            if (!aframeDiv) return;
+            /* Pausar vídeo antes de destruir */
+            var vid = aframeDiv.querySelector('video');
+            if (vid) { vid.pause(); vid.src = ''; vid.load(); }
+            /* Remover cena A-Frame (necessário para liberar contexto WebGL) */
+            var aScene = aframeDiv.querySelector('a-scene');
+            if (aScene && aScene.renderer) {
+              try { aScene.renderer.dispose(); } catch(e){}
+            }
+            /* Limpar todos os event listeners do A-Frame antes de destruir:
+               1. pause() para o loop de render e tenta limpar listeners internos
+               2. exitPointerLock previne que o document fique em pointer-lock
+               3. Clonar e substituir o canvas remove listeners que A-Frame
+                  adicionou diretamente ao elemento canvas */
+            if (aScene) {
+              try { aScene.pause(); } catch(e){}
+              try { aScene.halt(); } catch(e){}
+              try { if (document.exitPointerLock) document.exitPointerLock(); } catch(e){}
+              /* Substituir canvas por clone para remover listeners diretos no canvas */
+              var oldCanvas = aScene.canvas || aframeDiv.querySelector('canvas');
+              if (oldCanvas && oldCanvas.parentNode) {
+                oldCanvas.parentNode.replaceChild(oldCanvas.cloneNode(false), oldCanvas);
+              }
+            }
+            aframeDiv.innerHTML = '';
+            if (aframeDiv.parentNode) aframeDiv.parentNode.removeChild(aframeDiv);
+            aframeDiv = null;
+            /* Remover TODOS os controles de vídeo que ficaram no viewerWrap */
+            viewerWrap.querySelectorAll('.vt-aframe-controls').forEach(function(c) {
+              c.parentNode && c.parentNode.removeChild(c);
+            });
+          }
+
+          /* ── Destruir todos os overlays de vídeo (video-wall incluso) ─── */
+          function destroyAllVideoOverlays() {
+            destroyAframe();
+            /* Remover overlays de video-wall que ficaram no viewerWrap */
+            viewerWrap.querySelectorAll('[data-vt-wall-overlay]').forEach(function(o) {
+              /* Parar vídeo e liberar WebGL */
+              var v = o.querySelector('video');
+              if (v) { v.pause(); v.src = ''; v.load(); }
+              var sc = o.querySelector('a-scene');
+              if (sc && sc.renderer) { try { sc.renderer.dispose(); } catch(e){} }
+              if (o.parentNode) o.parentNode.removeChild(o);
+            });
+            /* Fechar modal de vídeo plano se estiver aberto */
+            if (typeof closeVideoModal === 'function') closeVideoModal();
+          }
+
+          /* ── Destruir Pannellum ────────────────────────────────────────── */
+          function destroyPannellum() {
+            if (pannellumViewer) {
+              try { pannellumViewer.destroy(); } catch(e){}
+              pannellumViewer = null;
+            }
+            if (pannellumDiv && pannellumDiv.parentNode) {
+              pannellumDiv.parentNode.removeChild(pannellumDiv);
+            }
+            pannellumDiv = null;
+            /* Remover controles customizados do Pannellum */
+            viewerWrap.querySelectorAll('.vt-pnlm-controls').forEach(function(c) {
+              c.parentNode && c.parentNode.removeChild(c);
+            });
+          }
+
+          /* ══════════════════════════════════════════════════════════════
+             CARREGAR CENA DE FOTO 360° — Pannellum
+          ══════════════════════════════════════════════════════════════ */
+          function loadImageScene(scene, reenterFs) {
+            var wasFs = reenterFs || vtIsTourFs();
+            destroyAllVideoOverlays(); /* limpa A-Frame, video-wall e modal de vídeo */
+
+            /* Reusar Pannellum se já existe */
+            if (pannellumViewer) {
+              pannellumViewer.loadScene(scene.id);
+              // Atualizar imediatamente — scenechange pode não disparar via loadScene()
+              currentSceneId = scene.id;
+              updateSceneInfo(scene);
+              activateThumb(scene.id, false);
+              return;
+            }
+
+            /* Criar container Pannellum */
+            pannellumDiv = document.createElement('div');
+            pannellumDiv.className = 'vt-pannellum-container';
+            viewerWrap.insertBefore(pannellumDiv, sceneInfo);
+
+            /* Montar config de todas as cenas de imagem */
+            var pScenes = {};
+
+            /* Mapa de metadados das cenas — usado pelo buildHotSpots para compensação de Norte */
+            var scenesMap = {};
+            tourData.scenes.forEach(function(s) {
+              scenesMap[s.id] = {
+                north: s.north || 0,
+                hfov:  s.hfov  || 100,
+                yaw:   s.yaw   || 0,
+                pitch: s.pitch || 0,
+              };
+            });
+
+            tourData.scenes.forEach(function(s) {
+              if ((s.sceneType || 'image') !== 'image') return;
+
+              pScenes[s.id] = {
+                title: '',
+                type: 'equirectangular',
+                panorama: s.src,
+                northOffset: s.north  || 0,
+                hfov:        s.hfov   || 100,
+                yaw:         s.yaw    || 0,
+                pitch:       s.pitch  || 0,
+                hotSpots: buildHotSpots(s.hotspots || [], scenesMap)
+              };
+            });
+
+            requestAnimationFrame(function(){ requestAnimationFrame(function(){
+              pannellumViewer = pannellum.viewer(pannellumDiv, {
+                default: {
+                  firstScene: scene.id,
+                  sceneFadeDuration: 300,  /* curto: o efeito visual principal é o zoom */
+                  autoLoad: true,
+                  showControls: true
+                },
+                scenes: pScenes
+              });
+
+              pannellumViewer.on('scenechange', function(newId) {
+                currentSceneId = newId;
+                var sc = tourData.scenes.find(function(s){ return s.id === newId; });
+                if (sc) { updateSceneInfo(sc); activateThumb(newId, false); }
+              });
+              pannellumViewer.on('load', function() {
+                var activeId = pannellumViewer.getScene();
+                var activeSc = tourData.scenes.find(function(s){ return s.id === activeId; });
+                if (activeSc) { updateSceneInfo(activeSc); activateThumb(activeId, false); }
+                setTimeout(function(){ try { pannellumViewer.resize(); } catch(e){} }, 100);
+                /* Reentrar em fullscreen se a cena anterior (vídeo) estava em fullscreen */
+                if (wasFs && !vtIsTourFs()) {
+                  setTimeout(function() {
+                    var el = pannellumViewer.getContainer
+                      ? pannellumViewer.getContainer()
+                      : viewerWrap;
+                    var req = viewerWrap.requestFullscreen || viewerWrap.webkitRequestFullscreen;
+                    if (req) req.call(viewerWrap);
+                  }, 150);
+                }
+              });
+
+              window.addEventListener('resize', function(){
+                try { pannellumViewer.resize(); } catch(e){}
+              });
+
+              /* ── Controles customizados do Pannellum (zoom + fullscreen) ─ */
+              /* Remover controles antigos se existirem */
+              viewerWrap.querySelectorAll('.vt-pnlm-controls').forEach(function(c) {
+                c.parentNode && c.parentNode.removeChild(c);
+              });
+
+              var pnlmCtrl = document.createElement('div');
+              pnlmCtrl.className = 'vt-pnlm-controls';
+
+              /* Zoom In */
+              var btnZoomIn = document.createElement('button');
+              btnZoomIn.className = 'vt-aframe-btn';
+              btnZoomIn.title = 'Ampliar';
+              btnZoomIn.innerHTML = '<svg viewBox="0 0 24 24" fill="#fff" width="18" height="18"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M12 10h-2v2H9v-2H7V9h2V7h1v2h2v1z"/></svg>';
+              btnZoomIn.addEventListener('click', function() {
+                try { pannellumViewer.setHfov(pannellumViewer.getHfov() - 10, true); } catch(e) {}
+              });
+
+              /* Zoom Out */
+              var btnZoomOut = document.createElement('button');
+              btnZoomOut.className = 'vt-aframe-btn';
+              btnZoomOut.title = 'Reduzir';
+              btnZoomOut.innerHTML = '<svg viewBox="0 0 24 24" fill="#fff" width="18" height="18"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M7 9h5v1H7z"/></svg>';
+              btnZoomOut.addEventListener('click', function() {
+                try { pannellumViewer.setHfov(pannellumViewer.getHfov() + 10, true); } catch(e) {}
+              });
+
+              /* Fullscreen */
+              var btnPnlmFs = document.createElement('button');
+              btnPnlmFs.className = 'vt-aframe-btn';
+              function updatePnlmFsBtn() {
+                btnPnlmFs.innerHTML = vtIsTourFs()
+                  ? '<svg viewBox="0 0 24 24" fill="#fff" width="18" height="18"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>'
+                  : '<svg viewBox="0 0 24 24" fill="#fff" width="18" height="18"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
+                btnPnlmFs.title = vtIsTourFs() ? 'Sair da tela cheia' : 'Tela cheia';
+              }
+              updatePnlmFsBtn();
+              btnPnlmFs.addEventListener('click', function() {
+                if (vtIsTourFs()) {
+                  (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+                } else {
+                  var req = viewerWrap.requestFullscreen || viewerWrap.webkitRequestFullscreen;
+                  if (req) req.call(viewerWrap);
+                }
+              });
+              document.addEventListener('fullscreenchange',        updatePnlmFsBtn);
+              document.addEventListener('webkitfullscreenchange',  updatePnlmFsBtn);
+
+              pnlmCtrl.appendChild(btnZoomIn);
+              pnlmCtrl.appendChild(btnZoomOut);
+              pnlmCtrl.appendChild(btnPnlmFs);
+              viewerWrap.appendChild(pnlmCtrl);
+            }); });
+          }
+
+          /* ── Construir hotSpots do Pannellum com suporte a vídeo ──────── */
+          function buildHotSpots(hotspots, scenesMap) {
+            scenesMap = scenesMap || {};
+            return hotspots.map(function(hs) {
+              var base = { pitch: hs.pitch, yaw: hs.yaw, text: hs.text || '' };
+
+              if (hs.type === 'scene') {
+                /* IMPORTANTE: usar type:'info' + createTooltipFunc para controle
+                   total da navegação. clickHandlerFunc NÃO é suportado pelo
+                   Pannellum para type:'info' — o clique deve ser vinculado via DOM
+                   dentro do createTooltipFunc. */
+                var destSceneId = hs.sceneId;
+                var hsText      = hs.text || '';
+
+                return Object.assign({}, base, {
+                  type: 'info',
+                  cssClass: 'pnlm-hotspot-base pnlm-scene vt-hs-scene-custom',
+                  createTooltipFunc: function(container) {
+
+                    /* ── Ícone: replicar exatamente o SVG padrão do Pannellum ── */
+                    var iconWrap = document.createElement('div');
+                    iconWrap.className = 'vt-hs-icon';
+                    iconWrap.innerHTML =
+                      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="30" height="30">' +
+                        '<circle cx="50" cy="50" r="50" fill="rgba(234,179,8,0.85)"/>' +
+                        '<polygon points="50,18 76,65 50,52 24,65" fill="white"/>' +
+                      '</svg>';
+                    container.appendChild(iconWrap);
+
+                    /* ── Label do hotspot ── */
+                    if (hsText) {
+                      var label = document.createElement('div');
+                      label.className = 'vt-hs-label';
+                      label.textContent = hsText;
+                      container.appendChild(label);
+                    }
+
+                    /* ── Vincular clique ao próprio container (pnlm-tooltip)
+                       e também ao hotspot pai para máxima compatibilidade ── */
+                    container.style.cursor = 'pointer';
+                    container.style.pointerEvents = 'auto';
+
+                    function handleNavClick(e) {
+                      e.stopPropagation();
+                      e.preventDefault();
+
+                      if (window.__vtNavigating || !pannellumViewer || !destSceneId) return;
+                      window.__vtNavigating = true;
+
+                      var activeScene  = pannellumViewer.getScene();
+                      var currentYaw   = pannellumViewer.getYaw();
+                      var currentPitch = pannellumViewer.getPitch();
+                      var currentHfov  = pannellumViewer.getHfov();
+
+                      /* Compensação de Norte — preserva direção geográfica real:
+                         A propriedade 'north' armazena o Yaw (em graus) onde fica o Norte.
+                         Azimute (bússola) = Yaw Atual - Norte da Cena
+                         
+                         Para manter o mesmo Azimute na Cena B:
+                           Yaw_A - Norte_A = Yaw_B - Norte_B
+                           Yaw_B = Yaw_A - Norte_A + Norte_B
+                      */
+                      var originNorth = (scenesMap[activeScene] || {}).north || 0;
+                      var destNorth   = (scenesMap[destSceneId] || {}).north || 0;
+                      var adjustedYaw = currentYaw - originNorth + destNorth;
+                      while (adjustedYaw >  180) adjustedYaw -= 360;
+                      while (adjustedYaw < -180) adjustedYaw += 360;
+
+                      /* Animação zoom walk-in */
+                      var startHfov  = currentHfov || 100;
+                      var targetHfov = Math.max(startHfov * 0.25, 20);
+                      var duration   = 450;
+                      var startTime  = null;
+
+                      function animateZoom(ts) {
+                        if (!startTime) startTime = ts;
+                        var p     = Math.min((ts - startTime) / duration, 1);
+                        var eased = p * p * p; /* easeInCubic */
+                        try {
+                          pannellumViewer.setHfov(
+                            startHfov + (targetHfov - startHfov) * eased, false);
+                        } catch(err) {}
+
+                        if (p < 1) {
+                          requestAnimationFrame(animateZoom);
+                        } else {
+                          try {
+                            pannellumViewer.loadScene(
+                              destSceneId, currentPitch, adjustedYaw, startHfov);
+                          } catch(err) {}
+                          setTimeout(function() {
+                            window.__vtNavigating = false;
+                          }, 600);
+                        }
+                      }
+                      requestAnimationFrame(animateZoom);
+                    }
+
+                    /* Vincular a ambos: container (pnlm-tooltip) e hotspot pai */
+                    container.addEventListener('click', handleNavClick);
+                    var hotEl = container.parentElement;
+                    if (hotEl) hotEl.addEventListener('click', handleNavClick);
+                  }
+                });
+
+              } else if (hs.type === 'info') {
+                return Object.assign(base, { type:'info' });
+
+              } else if (hs.type === 'url') {
+                return Object.assign(base, { type:'info', URL: hs.url });
+
+              } else if (hs.type === 'video-flat') {
+                /* Tooltip com <video> embutido.
+                   videoShowOnLoad=true  → painel sempre visível (CSS vt-vf-always-open)
+                   videoShowOnLoad=false → painel abre só no hover/clique (CSS nativo Pannellum) */
+                var capturedHsFlat = hs;
+                return Object.assign(base, {
+                  type: 'info',
+                  cssClass: 'pnlm-hotspot-base pnlm-info vt-hs-video-flat'
+                            + (capturedHsFlat.videoShowOnLoad ? ' vt-vf-always-open' : ''),
+                  createTooltipFunc: function(container) {
+                    /* ── Estratégia de posicionamento ────────────────────────
+                       O Pannellum posiciona o hotspot via transform:translate()
+                       em position:absolute. NUNCA alterar position do container.
+                       O trigger fica em flow normal — container cresce com ele
+                       (tamanho estável entre frames). O painel fica em
+                       position:absolute — não afeta offsetWidth/Height.        ── */
+                    /* Não tocar em position — Pannellum precisa de absolute */
+                    container.style.display = 'inline-block';
+
+                    /* ── Botão trigger — em flow normal, tamanho estável ── */
+                    var trigIcon = document.createElement('div');
+                    trigIcon.className = 'vt-vf-trigger';
+                    trigIcon.style.cssText = [
+                      'display:flex;align-items:center;gap:6px;',
+                      'background:rgba(0,0,0,0.72);color:#fff;',
+                      'font-family:sans-serif;font-size:12px;font-weight:700;',
+                      'padding:5px 10px;border-radius:4px;cursor:pointer;',
+                      'white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.5);',
+                      'backdrop-filter:blur(4px);pointer-events:auto;'
+                    ].join('');
+                    trigIcon.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="#fff" style="flex-shrink:0"><polygon points="5,3 19,12 5,21"/></svg>'
+                                      + (capturedHsFlat.text ? capturedHsFlat.text : 'Vídeo');
+                    container.appendChild(trigIcon);
+
+                    /* ── Painel de vídeo — position:absolute, flutua acima do trigger ── */
+                    var panel = document.createElement('div');
+                    panel.className = 'vt-vf-panel';
+                    /* Centralizado horizontalmente em relação ao trigger, acima dele */
+                    panel.style.cssText = [
+                      'position:absolute;',
+                      'width:280px;border-radius:8px;overflow:hidden;',
+                      'box-shadow:0 4px 24px rgba(0,0,0,0.6);background:#000;',
+                      'pointer-events:auto;display:none;z-index:10;'
+                    ].join('');
+
+                    /* Centraliza o painel sobre o ponto de ancoragem via JS,
+                       pois % em position:absolute com altura auto é 0 em alguns browsers */
+                    function positionPanel() {
+                      var cW = container.offsetWidth  || 0;
+                      var cH = container.offsetHeight || 0;
+                      panel.style.left = (cW / 2 - 140) + 'px';  /* 140 = 280/2 */
+                      panel.style.top  = (cH / 2 - panel.offsetHeight / 2) + 'px';
+                    }
+
+                    /* Poster (thumbnail clicável) */
+                    var poster = document.createElement('div');
+                    poster.style.cssText = 'width:280px;height:158px;background:#000;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;';
+                    if (capturedHsFlat.videoPoster) {
+                      var pImg = document.createElement('img');
+                      pImg.src = capturedHsFlat.videoPoster;
+                      pImg.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;inset:0;';
+                      poster.appendChild(pImg);
+                    }
+                    var playIcon = document.createElement('div');
+                    playIcon.innerHTML = '<svg viewBox="0 0 24 24" width="48" height="48"><circle cx="12" cy="12" r="12" fill="rgba(0,0,0,0.55)"/><polygon points="9,7 19,12 9,17" fill="#fff"/></svg>';
+                    playIcon.style.cssText = 'position:relative;z-index:2;pointer-events:none;';
+                    poster.appendChild(playIcon);
+                    if (capturedHsFlat.text) {
+                      var lbl = document.createElement('div');
+                      lbl.textContent = capturedHsFlat.text;
+                      lbl.style.cssText = 'position:absolute;bottom:0;left:0;right:0;z-index:3;background:linear-gradient(transparent,rgba(0,0,0,0.8));color:#fff;font-family:sans-serif;font-size:12px;font-weight:600;padding:16px 8px 6px;pointer-events:none;';
+                      poster.appendChild(lbl);
+                    }
+
+                    /* Vídeo */
+                    var vid = document.createElement('video');
+                    vid.src = capturedHsFlat.videoUrl || '';
+                    vid.controls = true;
+                    vid.loop     = !!capturedHsFlat.videoLoop;
+                    vid.muted    = !!capturedHsFlat.videoMuted;
+                    vid.playsinline = true;
+                    vid.style.cssText = 'width:280px;display:none;background:#000;';
+                    poster.addEventListener('click', function(e) {
+                      e.stopPropagation(); e.preventDefault();
+                      poster.style.display = 'none';
+                      vid.style.display    = 'block';
+                      vid.play().catch(function(){});
+                    });
+                    vid.addEventListener('ended', function() {
+                      vid.style.display    = 'none';
+                      poster.style.display = 'flex';
+                      vid.currentTime = 0;
+                    });
+                    panel.appendChild(poster);
+                    panel.appendChild(vid);
+
+                    /* Botão fechar no painel */
+                    var closeBtn = document.createElement('button');
+                    closeBtn.innerHTML = '&times;';
+                    closeBtn.style.cssText = 'position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;z-index:10;display:flex;align-items:center;justify-content:center;';
+                    closeBtn.title = 'Fechar';
+                    closeBtn.addEventListener('click', function(e) {
+                      e.stopPropagation();
+                      vid.pause();
+                      panel.style.display  = 'none';
+                      if (!capturedHsFlat.videoShowOnLoad) {
+                        trigIcon.style.display = 'flex';
+                      }
+                    });
+                    panel.appendChild(closeBtn);
+                    container.appendChild(panel);
+
+                    /* Abrir painel ao clicar no trigger */
+                    trigIcon.addEventListener('click', function(e) {
+                      e.stopPropagation(); e.preventDefault();
+                      panel.style.display    = 'block';
+                      if (!capturedHsFlat.videoShowOnLoad) {
+                        trigIcon.style.display = 'none';
+                      }
+                      /* rAF: aguarda reflow para ler offsetHeight correto */
+                      requestAnimationFrame(function() { positionPanel(); });
+                    });
+
+                    /* Modo showOnLoad: painel aberto, trigger oculto */
+                    if (capturedHsFlat.videoShowOnLoad) {
+                      panel.style.display    = 'block';
+                      trigIcon.style.display = 'none';
+                      /* Aguardar render para medir e posicionar */
+                      requestAnimationFrame(function() { positionPanel(); });
+                    }
+
+                    /* Bloquear propagação */
+                    [container, panel, vid].forEach(function(el) {
+                      el.addEventListener('click', function(e) { e.stopPropagation(); });
+                    });
+                    if (container.parentElement) {
+                      container.parentElement.addEventListener('click', function(e) { e.stopPropagation(); });
+                    }
+                  }
+                });
+
+              } else if (hs.type === 'video-modal') {
+                /* Hotspot que abre modal overlay com player de vídeo */
+                var capturedHs = hs;
+                return Object.assign(base, {
+                  type: 'info',
+                  cssClass: 'pnlm-hotspot-base pnlm-info vt-hs-video-modal',
+                  createTooltipFunc: function(container) {
+                    var btn = document.createElement('div');
+                    btn.style.cssText = 'display:flex;align-items:center;gap:6px;background:rgba(220,38,38,0.9);color:#fff;font-family:sans-serif;font-size:12px;font-weight:700;padding:5px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.4);';
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" fill="#fff"><polygon points="5,3 19,12 5,21"/></svg>' + (capturedHs.text || 'Ver vídeo');
+
+                    btn.addEventListener('click', function(e) {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      openVideoModal(capturedHs);
+                    });
+
+                    /* Impedir que cliques no container propaguem para o Pannellum */
+                    container.addEventListener('click', function(e) { e.stopPropagation(); });
+                    if (container.parentElement) {
+                      container.parentElement.addEventListener('click', function(e) { e.stopPropagation(); });
+                    }
+
+                    container.appendChild(btn);
+                  }
+                });
+
+              } else if (hs.type === 'video-wall') {
+                /* Vídeo em perspectiva 3D — plano A-Frame overlay sobre Pannellum */
+                var capturedWall = hs;
+                var wallActive   = false;
+                var wallOverlay  = null;
+
+                return Object.assign(base, {
+                  type: 'info',
+                  cssClass: 'pnlm-hotspot-base pnlm-info vt-hs-video-wall',
+                  createTooltipFunc: function(container) {
+                    var btn = document.createElement('div');
+                    btn.style.cssText = 'display:flex;align-items:center;gap:5px;background:rgba(30,30,60,0.9);color:#fff;font-family:sans-serif;font-size:12px;font-weight:700;padding:5px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;';
+                    btn.innerHTML = '🖼️ ' + (capturedWall.text || 'Ver vídeo');
+                    container.appendChild(btn);
+                  },
+                  clickHandlerFunc: function() {
+                    /* Desativar se já está ativo */
+                    if (wallActive && wallOverlay) {
+                      var oldVid = wallOverlay.querySelector('video');
+                      if (oldVid) { oldVid.pause(); oldVid.src = ''; oldVid.load(); }
+                      var oldScene = wallOverlay.querySelector('a-scene');
+                      if (oldScene && oldScene.renderer) { try { oldScene.renderer.dispose(); } catch(e){} }
+                      if (wallOverlay.parentNode) wallOverlay.parentNode.removeChild(wallOverlay);
+                      wallOverlay = null;
+                      wallActive  = false;
+                      return;
+                    }
+
+                    wallActive = true;
+                    var pitch  = capturedWall.pitch      || 0;
+                    var yaw    = capturedWall.yaw        || 0;
+                    var dist   = capturedWall.wallDist   || 3;
+                    var width  = capturedWall.wallWidth  || 4;
+                    var height = capturedWall.wallHeight || 2.25;
+                    var vidId  = 'vt-wall-' + Math.random().toString(36).slice(2,7);
+
+                    /* Coordenadas cartesianas a partir de esféricas */
+                    var pitchRad = pitch * Math.PI / 180;
+                    var yawRad   = yaw   * Math.PI / 180;
+                    var px =  dist * Math.cos(pitchRad) * Math.sin(yawRad);
+                    var py =  dist * Math.sin(pitchRad);
+                    var pz = -dist * Math.cos(pitchRad) * Math.cos(yawRad);
+
+                    var overlay = document.createElement('div');
+                    overlay.style.cssText = 'position:absolute;inset:0;z-index:15;pointer-events:none;';
+                    overlay.setAttribute('data-vt-wall-overlay', '1');
+                    wallOverlay = overlay;
+
+                    var aScene = document.createElement('a-scene');
+                    aScene.setAttribute('embedded', '');
+                    aScene.setAttribute('vr-mode-ui', 'enabled:false');
+                    aScene.setAttribute('loading-screen', 'enabled:false');
+                    aScene.setAttribute('renderer', 'alpha:true;antialias:true');
+                    aScene.style.cssText = 'width:100%;height:100%;background:transparent;pointer-events:auto;';
+
+                    var assets = document.createElement('a-assets');
+                    var vid = document.createElement('video');
+                    vid.id = vidId;
+                    vid.src = capturedWall.videoUrl || '';
+                    vid.crossOrigin = 'anonymous';
+                    vid.loop        = !!capturedWall.videoLoop;
+                    vid.muted       = !!capturedWall.videoMuted;
+                    vid.playsinline = true;
+                    assets.appendChild(vid);
+                    aScene.appendChild(assets);
+
+                    var cam = document.createElement('a-camera');
+                    cam.setAttribute('look-controls', 'enabled:false');
+                    cam.setAttribute('wasd-controls', 'enabled:false');
+                    aScene.appendChild(cam);
+
+                    var plane = document.createElement('a-video');
+                    plane.setAttribute('src', '#' + vidId);
+                    plane.setAttribute('width',  String(width));
+                    plane.setAttribute('height', String(height));
+                    plane.setAttribute('position', px + ' ' + py + ' ' + pz);
+                    plane.setAttribute('rotation', pitch + ' ' + (-yaw) + ' 0');
+                    plane.setAttribute('side', 'double');
+                    aScene.appendChild(plane);
+
+                    var closeBtn = document.createElement('button');
+                    closeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="#fff" width="18" height="18"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+                    closeBtn.title = 'Fechar vídeo';
+                    closeBtn.style.cssText = 'position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.65);color:#fff;border:none;width:38px;height:38px;border-radius:50%;cursor:pointer;z-index:20;pointer-events:auto;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:background .2s;';
+                    closeBtn.onmouseover = function(){ closeBtn.style.background='rgba(0,0,0,0.85)'; };
+                    closeBtn.onmouseout  = function(){ closeBtn.style.background='rgba(0,0,0,0.65)'; };
+                    closeBtn.onclick = function() {
+                      vid.pause(); vid.src = ''; vid.load();
+                      try { aScene.renderer && aScene.renderer.dispose(); } catch(e){}
+                      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                      wallOverlay = null;
+                      wallActive  = false;
+                    };
+
+                    /* Sincronizar câmera A-Frame com Pannellum */
+                    var syncRunning = true;
+                    function syncCamera() {
+                      if (!syncRunning || !pannellumViewer) return;
+                      try {
+                        var pYaw   = pannellumViewer.getYaw()   || 0;
+                        var pPitch = pannellumViewer.getPitch() || 0;
+                        var pHfov  = pannellumViewer.getHfov()  || 100;
+                        var camEl  = aScene.querySelector('a-camera');
+                        if (camEl) {
+                          camEl.setAttribute('rotation', (-pPitch) + ' ' + (-pYaw) + ' 0');
+                          camEl.setAttribute('fov', String(pHfov));
+                        }
+                      } catch(e) {}
+                      if (syncRunning) requestAnimationFrame(syncCamera);
+                    }
+                    closeBtn.addEventListener('click', function() { syncRunning = false; }, { once: true });
+
+                    overlay.appendChild(aScene);
+                    overlay.appendChild(closeBtn);
+                    viewerWrap.appendChild(overlay);
+
+                    aScene.addEventListener('loaded', function() {
+                      vid.play().catch(function(){});
+                      syncCamera();
+                    });
+                  }
+                });
+
+              } else if (hs.type === 'image-detail') {
+                /* Hotspot que abre modal de imagem de detalhe */
+                var capturedImg = hs;
+                return Object.assign(base, {
+                  type: 'info',
+                  cssClass: 'pnlm-hotspot-base pnlm-info vt-hs-image-detail',
+                  clickHandlerFunc: function(e) {
+                    if (e) { e.stopPropagation(); e.preventDefault(); }
+                    openImageModal(capturedImg);
+                  },
+                  createTooltipFunc: function(container) {
+                    var btn = document.createElement('div');
+                    btn.style.cssText = [
+                      'display:flex;align-items:center;gap:6px;',
+                      'background:rgba(99,102,241,0.9);color:#fff;',
+                      'font-family:sans-serif;font-size:12px;font-weight:700;',
+                      'padding:5px 10px;border-radius:4px;cursor:pointer;',
+                      'white-space:nowrap;'
+                    ].join('');
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" fill="#fff">'
+                      + '<path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>'
+                      + '</svg>'
+                      + (capturedImg.text || 'Ver imagem');
+                    function _openImg(e) {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      openImageModal(capturedImg);
+                    }
+                    btn.addEventListener('click',     _openImg);
+                    btn.addEventListener('pointerup', _openImg);
+                    /* Impedir propagação no container e hotspot pai */
+                    container.addEventListener('click', function(e) { e.stopPropagation(); });
+                    if (container.parentElement) {
+                      container.parentElement.addEventListener('click', function(e) { e.stopPropagation(); });
+                    }
+                    container.appendChild(btn);
+                  }
+                });
+
+              } else {
+                /* Fallback */
+                return Object.assign(base, { type:'info' });
+              }
+            });
+          }
+
+          /* ══════════════════════════════════════════════════════════════
+             CARREGAR CENA DE VÍDEO 360° — A-Frame
+          ══════════════════════════════════════════════════════════════ */
+          function loadVideoScene(scene, reenterFs) {
+            /* Verificar se A-Frame está disponível */
+            if (typeof AFRAME === 'undefined') {
+              /* Mostrar loading enquanto A-Frame carrega */
+              sceneInfo.style.display = 'block';
+              sceneInfo.innerHTML = '<div style="color:#a78bfa;font-size:12px;">⏳ Carregando A-Frame para vídeo 360°…</div>';
+
+              var retries = 0;
+              var maxRetries = 30; /* 15 segundos */
+              var waitAframe = setInterval(function() {
+                retries++;
+                if (typeof AFRAME !== 'undefined') {
+                  clearInterval(waitAframe);
+                  sceneInfo.style.display = 'none';
+                  loadVideoScene(scene);
+                } else if (window.__aframeFailed || retries > maxRetries) {
+                  clearInterval(waitAframe);
+                  sceneInfo.style.display = 'block';
+                  sceneInfo.innerHTML =
+                    '<div style="color:#fca5a5;font-size:12px;line-height:1.6;">' +
+                    '⚠ A-Frame não carregou.<br>' +
+                    'Execute <code style="background:#1a1a2e;padding:1px 5px;border-radius:3px;">npm install</code> ' +
+                    'para copiar o arquivo local,<br>ou verifique a conexão com a internet.' +
+                    '<br><br>' +
+                    '<button onclick="this.parentNode.parentNode.style.display=\'none\'" ' +
+                    'style="background:#2a2a3e;color:#ccc;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11px;">' +
+                    '✕ Fechar</button></div>';
+                }
+              }, 500);
+              return;
+            }
+
+            /* Pausar e destruir Pannellum para liberar o contexto WebGL */
+            destroyPannellum();
+            destroyAllVideoOverlays(); /* limpa controles antigos antes de criar novos */
+
+            aframeDiv = document.createElement('div');
+            aframeDiv.className = 'vt-aframe-container';
+            viewerWrap.insertBefore(aframeDiv, sceneInfo);
+
+            /* ── Loading overlay ─────────────────────────────────────────── */
+            var loadingEl = document.createElement('div');
+            loadingEl.className = 'vt-video-loading';
+            loadingEl.innerHTML = [
+              '<div class="vt-spinner"></div>',
+              '<div class="vt-loading-label">Carregando vídeo 360°...</div>',
+              '<div class="vt-loading-progress">',
+              '  <div class="vt-loading-progress-bar" id="vt-prog-' + scene.id + '"></div>',
+              '</div>'
+            ].join('');
+            viewerWrap.appendChild(loadingEl);
+
+            var progBar = loadingEl.querySelector('.vt-loading-progress-bar');
+
+            function hideLoading() {
+              loadingEl.classList.add('hide');
+              setTimeout(function() {
+                if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
+              }, 520);
+            }
+
+            /* ID único para o asset de vídeo desta cena */
+            var vidId = 'vt-vid-' + scene.id;
+
+            /* Opções de vídeo */
+            var autoplay = scene.videoAutoplay !== false;
+            var loop     = scene.videoLoop     !== false;
+            var muted    = scene.videoMuted    !== false;
+
+            /* Criar a-scene dinamicamente */
+            var aScene = document.createElement('a-scene');
+            aScene.setAttribute('embedded', '');
+            aScene.setAttribute('vr-mode-ui', 'enabled: false');
+            aScene.setAttribute('loading-screen', 'enabled: false');
+            aScene.style.cssText = 'width:100%;height:100%;';
+
+            /* Assets */
+            var assets = document.createElement('a-assets');
+
+            var vid = document.createElement('video');
+            vid.id         = vidId;
+            vid.src        = scene.src;
+            vid.crossOrigin = 'anonymous';
+            vid.loop       = loop;
+            vid.muted      = muted;
+            vid.playsinline = true;
+            vid.preload    = 'auto';
+            if (scene.poster) vid.poster = scene.poster;
+            assets.appendChild(vid);
+            aScene.appendChild(assets);
+
+            /* Sky com textura de vídeo */
+            var sky = document.createElement('a-videosphere');
+            sky.setAttribute('src', '#' + vidId);
+            sky.setAttribute('rotation', '0 ' + (scene.yaw || 0) + ' 0');
+            sky.setAttribute('radius', '500');
+            aScene.appendChild(sky);
+
+            /* Câmera */
+            var cam = document.createElement('a-camera');
+            cam.setAttribute('look-controls', 'reverseMouseDrag: true');
+            cam.setAttribute('wasd-controls', 'enabled: false');
+            aScene.appendChild(cam);
+
+            aframeDiv.appendChild(aScene);
+
+            /* Controles de playback sobrepostos */
+            var controls = document.createElement('div');
+            controls.className = 'vt-aframe-controls';
+
+            /* Play/Pause */
+            var btnPlay = document.createElement('button');
+            btnPlay.className = 'vt-aframe-btn';
+            btnPlay.id = 'vt-af-play-' + scene.id;
+            var isPlaying = false;
+
+            function updatePlayBtn() {
+              btnPlay.innerHTML = isPlaying
+                ? '<svg viewBox="0 0 24 24" fill="#fff" title="Pausar"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="#fff" title="Play"><polygon points="5,3 19,12 5,21"/></svg>';
+              btnPlay.title = isPlaying ? 'Pausar' : 'Play';
+            }
+            updatePlayBtn();
+
+            btnPlay.addEventListener('click', function() {
+              if (isPlaying) { vid.pause(); isPlaying = false; }
+              else { vid.play().catch(function(){}); isPlaying = true; }
+              updatePlayBtn();
+            });
+
+            /* Mudo/Som */
+            var btnMute = document.createElement('button');
+            btnMute.className = 'vt-aframe-btn';
+            var isMuted = muted;
+
+            function updateMuteBtn() {
+              btnMute.innerHTML = isMuted
+                ? '<svg viewBox="0 0 24 24" fill="#fff"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="#fff"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>';
+              btnMute.title = isMuted ? 'Sem som' : 'Som';
+            }
+            updateMuteBtn();
+
+            btnMute.addEventListener('click', function() {
+              isMuted = !isMuted;
+              vid.muted = isMuted;
+              updateMuteBtn();
+            });
+
+            /* Botão fullscreen do vídeo 360 */
+            var btnFs = document.createElement('button');
+            btnFs.className = 'vt-aframe-btn';
+            btnFs.title = 'Tela cheia';
+            function updateFsBtn() {
+              btnFs.innerHTML = vtIsTourFs()
+                ? '<svg viewBox="0 0 24 24" fill="#fff" width="18" height="18"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="#fff" width="18" height="18"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
+              btnFs.title = vtIsTourFs() ? 'Sair da tela cheia' : 'Tela cheia';
+            }
+            updateFsBtn();
+            btnFs.addEventListener('click', function() {
+              if (vtIsTourFs()) {
+                (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+              } else {
+                var req = viewerWrap.requestFullscreen || viewerWrap.webkitRequestFullscreen;
+                if (req) req.call(viewerWrap);
+              }
+            });
+            /* Atualizar ícone ao mudar estado de fullscreen */
+            document.addEventListener('fullscreenchange',       updateFsBtn);
+            document.addEventListener('webkitfullscreenchange', updateFsBtn);
+
+            controls.appendChild(btnPlay);
+            controls.appendChild(btnMute);
+            controls.appendChild(btnFs);
+
+            /* Hint ESC ao entrar em fullscreen pelo botão nativo do Pannellum/browser */
+            var escHint = document.createElement('div');
+            escHint.style.cssText = [
+              'position:absolute;top:12px;left:50%;transform:translateX(-50%);',
+              'background:rgba(0,0,0,0.65);color:#fff;',
+              'font-family:sans-serif;font-size:12px;',
+              'padding:5px 14px;border-radius:20px;',
+              'backdrop-filter:blur(4px);pointer-events:none;',
+              'opacity:0;transition:opacity .4s;z-index:20;',
+              'white-space:nowrap;'
+            ].join('');
+            escHint.textContent = 'Pressione ESC para sair do fullscreen';
+            viewerWrap.appendChild(escHint);
+
+            document.addEventListener('fullscreenchange', function() {
+              /* escHint — hint de ESC para o vídeo 360 */
+              if (vtIsTourFs()) {
+                escHint.style.opacity = '1';
+                setTimeout(function() { escHint.style.opacity = '0'; }, 3000);
+              } else {
+                escHint.style.opacity = '0';
+              }
+            });
+            viewerWrap.appendChild(controls);
+
+            /* Autoplay após o vídeo carregar */
+            /* Progresso via evento progress do vídeo */
+            vid.addEventListener('progress', function() {
+              if (!vid.duration || !vid.buffered.length) return;
+              var pct = (vid.buffered.end(vid.buffered.length - 1) / vid.duration) * 100;
+              if (progBar) progBar.style.width = Math.min(pct, 95) + '%';
+            });
+
+            /* Remover loading quando vídeo estiver pronto para tocar */
+            vid.addEventListener('canplay', function() {
+              if (progBar) progBar.style.width = '100%';
+              setTimeout(hideLoading, 200);
+            });
+
+            aScene.addEventListener('loaded', function() {
+              if (autoplay) {
+                vid.play().then(function() { isPlaying = true; updatePlayBtn(); }).catch(function(){});
+              }
+              /* Fallback: se canplay não disparou, remover loading após A-Frame carregar */
+              setTimeout(function() {
+                if (loadingEl.parentNode) hideLoading();
+              }, 500);
+              /* Reentrar em fullscreen se a cena anterior estava em fullscreen */
+              if (reenterFs && !vtIsTourFs()) {
+                setTimeout(function() {
+                  var req = viewerWrap.requestFullscreen || viewerWrap.webkitRequestFullscreen;
+                  if (req) req.call(viewerWrap);
+                }, 100);
+              }
+            });
+
+            vid.addEventListener('play',  function(){ isPlaying = true;  updatePlayBtn(); });
+            vid.addEventListener('pause', function(){ isPlaying = false; updatePlayBtn(); });
+            vid.addEventListener('error', function() {
+              if (loadingEl.parentNode) {
+                loadingEl.querySelector('.vt-loading-label').textContent = '⚠ Erro ao carregar o vídeo';
+                loadingEl.querySelector('.vt-spinner').style.display = 'none';
+              }
+            });
+
+            updateSceneInfo(scene);
+            activateThumb(scene.id, true);
+          }
+
+          /* ── Navegar para uma cena (detecta tipo) ─────────────────────── */
+          function goToScene(scene) {
+            currentSceneId = scene.id;
+            /* Guardar estado de fullscreen — A-Frame chama exitFullscreen
+               internamente ao destruir a a-scene; precisamos reentrar depois */
+            var wasFs = vtIsTourFs();
+            if ((scene.sceneType || 'image') === 'video') {
+              loadVideoScene(scene, wasFs);
+            } else {
+              loadImageScene(scene, wasFs);
+            }
+          }
+
+          /* ── Primeira cena ────────────────────────────────────────────── */
+          goToScene(tourData.scenes[0]);
+
+          /* ── Thumbnails ───────────────────────────────────────────────── */
+          if (thumbBar) {
+            tourData.scenes.forEach(function(scene) {
+              var isVid  = (scene.sceneType || 'image') === 'video';
+              var thumb  = document.createElement('div');
+              thumb.className = 'vt-thumb';
+              thumb.dataset.sceneId = scene.id;
+
+              var thumbSrc = isVid ? (scene.poster || '') : (scene.src || '');
+              thumb.innerHTML =
+                (thumbSrc
+                  ? '<img src="' + thumbSrc + '" alt="' + (scene.title || '') + '">'
+                  : '<div style="width:100%;height:100%;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:18px;">' + (isVid ? '🎬' : '🌐') + '</div>')
+                + (scene.title ? '<div class="vt-thumb-label">' + scene.title + '</div>' : '')
+                + (isVid ? '<div class="vt-thumb-video-badge">▶ VID</div>' : '');
+
+              thumb.addEventListener('click', function() { goToScene(scene); });
+              thumbBar.appendChild(thumb);
+            });
+          }
+        });
+      }
+
+      /* Aguardar Pannellum + A-Frame estarem prontos */
+      function waitAndInit() {
+        // Pannellum é obrigatório. A-Frame é opcional (só para cenas de vídeo).
+        // Não bloquear a inicialização se apenas o A-Frame ainda não carregou.
+        if (typeof pannellum !== 'undefined') {
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initVirtualTours);
+          } else {
+            initVirtualTours();
+          }
+        } else {
+          // Pannellum ainda não carregou — aguardar load completo
+          window.addEventListener('load', initVirtualTours);
+        }
+      }
+      waitAndInit();
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,88 @@
+THIRD-PARTY SOFTWARE NOTICES AND ATTRIBUTIONS
+==============================================
+
+VisualCMS360 uses the following open-source software. Their licenses and
+copyright notices are reproduced below in compliance with each license's terms.
+
+-------------------------------------------------------------------------------
+1. Astro & @astrojs/node
+   Version: astro ^6.4.2 / @astrojs/node ^10.1.2
+   License: MIT
+   Copyright (c) 2021 Fred K. Schott
+   https://github.com/withastro/astro/blob/main/LICENSE
+-------------------------------------------------------------------------------
+
+2. GrapesJS
+   Version: ^0.22.15
+   License: BSD-3-Clause
+   Copyright (c) 2015, Artur Arseniev
+   All rights reserved.
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+   2. Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+   3. Neither the name of GrapesJS nor the names of its contributors may be
+      used to endorse or promote products derived from this software without
+      specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+   POSSIBILITY OF SUCH DAMAGE.
+
+   https://github.com/GrapesJS/grapesjs/blob/master/LICENSE
+-------------------------------------------------------------------------------
+
+3. grapesjs-blocks-basic
+   Version: ^1.0.2
+   License: BSD-3-Clause
+   Copyright (c) GrapesJS Contributors
+   https://github.com/GrapesJS/blocks-basic/blob/master/LICENSE
+-------------------------------------------------------------------------------
+
+4. grapesjs-tailwind
+   Version: ^1.0.13
+   License: MIT
+   Copyright (c) Digisquad
+   https://github.com/digisquad/grapesjs-tailwind/blob/master/LICENSE
+-------------------------------------------------------------------------------
+
+5. A-Frame
+   Version: ^1.6.0
+   License: MIT
+   Copyright (c) 2015 A-Frame Authors
+   https://github.com/aframevr/aframe/blob/master/LICENSE
+-------------------------------------------------------------------------------
+
+6. Pannellum
+   Version: ^2.5.6
+   License: MIT
+   Copyright (c) 2011-2021 Matthew Petroff
+   https://github.com/mpetroff/pannellum/blob/master/COPYING
+-------------------------------------------------------------------------------
+
+7. Tailwind CSS & @tailwindcss/vite
+   Version: ^4.2.4
+   License: MIT
+   Copyright (c) Tailwind Labs, Inc.
+   https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE
+-------------------------------------------------------------------------------
+
+8. Cheerio
+   Version: ^1.2.0
+   License: MIT
+   Copyright (c) 2021 The Cheerio contributors
+   https://github.com/cheeriojs/cheerio/blob/main/LICENSE
+-------------------------------------------------------------------------------

@@ -1,0 +1,162 @@
+---
+// Editor standalone — não usa Layout para evitar conflito com Tailwind global
+---
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visual CMS — Editor</title>
+  <link rel="stylesheet" href="/vendor/grapes.min.css" />
+  <!-- Pannellum — usado pelo componente Virtual Tour 360 -->
+  <link rel="stylesheet" href="/vendor/pannellum.min.css" />
+  <script is:inline src="/vendor/pannellum.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+
+    /* ── Painel lateral: largura 320px ──────────────────────────────────── */
+    :root {
+      --cms-panel-width: 320px;
+      --gjs-left-width:  320px;
+    }
+
+    .gjs-pn-views,
+    .gjs-pn-views-container {
+      width: var(--cms-panel-width) !important;
+      transition: right 0.3s ease !important;
+    }
+    .gjs-pn-options {
+      transition: right 0.3s ease !important;
+    }
+    .gjs-cv-canvas,
+    .gjs-pn-commands {
+      transition: width 0.3s ease !important;
+    }
+    .gjs-cv-canvas {
+      width: calc(100% - var(--cms-panel-width)) !important;
+    }
+    .gjs-pn-commands {
+      width: calc(100% - var(--cms-panel-width)) !important;
+    }
+
+    /* ── Toolbar: flex-wrap para telas estreitas ──────────────────────────── */
+    .gjs-pn-commands {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      height: auto !important;
+      min-height: 40px !important;
+    }
+
+    /* ── Painel devices-c: logo + combo lado a lado ──────────────────────── */
+    .gjs-pn-devices-c {
+      display: flex !important;
+      align-items: center !important;
+      gap: 0 !important;
+      padding: 0 !important;
+      width: auto !important;
+      min-width: 0 !important;
+      overflow: visible !important;
+      height: 40px !important;   /* igual à toolbar de comandos */
+      max-height: 40px !important;
+    }
+
+    /* Logo injetado via JS */
+    #cms-toolbar-logo {
+      display: flex;
+      align-items: center;
+      padding: 0 10px 0 6px;
+      flex-shrink: 0;
+      height: 100%;
+      max-height: 40px;
+      overflow: hidden;
+      border-right: 1px solid rgba(255,255,255,0.12);
+      margin-right: 8px;
+    }
+    #cms-toolbar-logo img {
+      height: 24px;        /* metade do tamanho natural da imagem (300x49) */
+      width: auto;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Esconder label "Device" nativo — span de texto dentro do painel devices */
+    .gjs-pn-devices-c > span:first-of-type,
+    .gjs-pn-devices-c .gjs-select-label,
+    .gjs-devices-c > span {
+      display: none !important;
+    }
+
+    /* ── Botão gaveta ─────────────────────────────────────────────────────── */
+    #cms-drawer-toggle {
+      position: fixed;
+      right: var(--cms-panel-width);
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 50;
+      width: 18px;
+      height: 48px;
+      background: #444754;
+      border: none;
+      border-radius: 6px 0 0 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ccc;
+      box-shadow: -2px 0 6px rgba(0,0,0,0.4);
+      transition: right 0.3s ease, background 0.15s;
+      padding: 0;
+    }
+    #cms-drawer-toggle:hover { background: #5a5d6e; }
+
+    /* Botão Export — verde */
+    .cms-export-btn { color: #34d399 !important; }
+    .cms-export-btn:hover { color: #6ee7b7 !important; background: rgba(52,211,153,.12) !important; }
+    /* Botão Import — azul */
+    .cms-import-btn { color: #60a5fa !important; }
+    .cms-import-btn:hover { color: #93c5fd !important; background: rgba(96,165,250,.12) !important; }
+
+    /* Botão Build — amarelo âmbar */
+    .cms-build-btn {
+      color: #f59e0b !important;
+      border-radius: 4px !important;
+    }
+    .cms-build-btn:hover {
+      color: #fbbf24 !important;
+      background: rgba(245,158,11,0.15) !important;
+      outline: 1px solid rgba(245,158,11,0.35) !important;
+    }
+    /* Estado "building" — pisca suavemente */
+    .cms-build-btn.building {
+      animation: cms-build-pulse 1s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes cms-build-pulse {
+      from { opacity: 1; }
+      to   { opacity: 0.45; }
+    }
+
+    #cms-drawer-toggle svg { transition: transform 0.3s ease; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+  <div id="gjs" style="height:100vh;overflow:hidden;"></div>
+  <datalist id="page-list"></datalist>
+  <!-- Botão gaveta para recolher/expandir painel lateral -->
+  <button id="cms-drawer-toggle" title="Recolher/Expandir painel">
+    <svg viewBox="0 0 8 14" width="8" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6,1 2,7 6,13"/>
+    </svg>
+  </button>
+
+  <script is:inline src="/vendor/grapes.min.js"></script>
+  <script is:inline src="/vendor/grapesjs-tailwind.min.js"></script>
+  <script is:inline src="/vendor/grapesjs-blocks-basic.min.js"></script>
+
+  <script is:inline src="/js/editor-main.js"></script>
+</body>
+</html>

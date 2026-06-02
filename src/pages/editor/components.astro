@@ -1,0 +1,134 @@
+---
+// Editor de Componentes standalone — não usa Layout para evitar conflito com Tailwind global
+---
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visual CMS — Editor de Componentes</title>
+  <link rel="stylesheet" href="/vendor/grapes.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+
+    /* ── Painel lateral: largura 320px ──────────────────────────────────── */
+    :root {
+      --cms-panel-width: 320px;
+      --gjs-left-width:  320px;
+    }
+
+    .gjs-pn-views,
+    .gjs-pn-views-container {
+      width: var(--cms-panel-width) !important;
+      transition: right 0.3s ease !important;
+    }
+    .gjs-pn-options {
+      transition: right 0.3s ease !important;
+    }
+    .gjs-cv-canvas,
+    .gjs-pn-commands {
+      transition: width 0.3s ease !important;
+    }
+    .gjs-cv-canvas {
+      width: calc(100% - var(--cms-panel-width)) !important;
+    }
+    .gjs-pn-commands {
+      width: calc(100% - var(--cms-panel-width)) !important;
+    }
+
+    /* ── Toolbar: flex-wrap para telas estreitas ──────────────────────────── */
+    .gjs-pn-commands {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      height: auto !important;
+      min-height: 40px !important;
+    }
+
+    /* ── Painel devices-c: logo + combo lado a lado ──────────────────────── */
+    .gjs-pn-devices-c {
+      display: flex !important;
+      align-items: center !important;
+      gap: 0 !important;
+      padding: 0 !important;
+      width: auto !important;
+      min-width: 0 !important;
+      overflow: visible !important;
+      height: 40px !important;   /* igual à toolbar de comandos */
+      max-height: 40px !important;
+    }
+
+    /* Logo injetado via JS */
+    #cms-toolbar-logo {
+      display: flex;
+      align-items: center;
+      padding: 0 10px 0 6px;
+      flex-shrink: 0;
+      height: 100%;
+      max-height: 40px;
+      overflow: hidden;
+      border-right: 1px solid rgba(255,255,255,0.12);
+      margin-right: 8px;
+    }
+    #cms-toolbar-logo img {
+      height: 24px;        /* metade do tamanho natural da imagem (300x49) */
+      width: auto;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Esconder label "Device" nativo */
+    .gjs-pn-devices-c > span:first-of-type,
+    .gjs-pn-devices-c .gjs-select-label,
+    .gjs-devices-c > span {
+      display: none !important;
+    }
+
+    /* ── Botão gaveta ─────────────────────────────────────────────────────── */
+    #cms-drawer-toggle {
+      position: fixed;
+      right: var(--cms-panel-width);
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 99999;
+      width: 18px;
+      height: 48px;
+      background: #444754;
+      border: none;
+      border-radius: 6px 0 0 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ccc;
+      box-shadow: -2px 0 6px rgba(0,0,0,0.4);
+      transition: right 0.3s ease, background 0.15s;
+      padding: 0;
+    }
+    #cms-drawer-toggle:hover { background: #5a5d6e; }
+    #cms-drawer-toggle svg { transition: transform 0.3s ease; flex-shrink: 0; }
+
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  </style>
+</head>
+<body>
+
+  <div id="gjs-comp" style="height:100vh;overflow:hidden;"></div>
+
+  <!-- Botão gaveta para recolher/expandir painel lateral -->
+  <button id="cms-drawer-toggle" title="Recolher/Expandir painel">
+    <svg viewBox="0 0 8 14" width="8" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6,1 2,7 6,13"/>
+    </svg>
+  </button>
+
+  <script is:inline src="/vendor/grapes.min.js"></script>
+  <script is:inline src="/vendor/grapesjs-tailwind.min.js"></script>
+  <script is:inline src="/vendor/grapesjs-blocks-basic.min.js"></script>
+
+  <script is:inline src="/js/components-main.js"></script>
+
+</body>
+</html>

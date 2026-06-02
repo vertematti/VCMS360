@@ -1,0 +1,63 @@
+---
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import * as cheerio from 'cheerio';
+import Layout from '../layouts/Layout.astro';
+
+// This function runs at build time to generate static paths
+export async function getStaticPaths() {
+  const filePath = path.resolve(process.cwd(), 'src/data/pages.json');
+  let pages = {};
+  
+  try {
+    const fileData = await fs.readFile(filePath, 'utf-8');
+    pages = JSON.parse(fileData);
+  } catch (e) {
+    console.error("Could not load pages.json");
+  }
+
+  return Object.keys(pages).map((slugKey) => {
+    return {
+      params: { slug: slugKey === 'index' ? undefined : slugKey },
+      props: { pageData: pages[slugKey] },
+    };
+  });
+}
+
+const { pageData } = Astro.props;
+
+// Load components data to inject the latest shared components
+const componentsPath = path.resolve(process.cwd(), 'src/data/components.json');
+let components = {};
+try {
+  const compData = await fs.readFile(componentsPath, 'utf-8');
+  components = JSON.parse(compData);
+} catch (e) {}
+
+let finalHtml = pageData.html || '';
+let finalCss = pageData.css || '';
+
+if (finalHtml) {
+  const $ = cheerio.load(finalHtml);
+  
+  $('[data-component-id]').each((i, el) => {
+    const id = $(el).attr('data-component-id');
+    if (id && components[id]) {
+      // Inject the latest HTML from the component
+      $(el).html(components[id].html || '');
+      // Append the component's CSS
+      finalCss += '\n' + (components[id].css || '');
+    }
+  });
+  
+  finalHtml = finalHtml.includes('<body') ? $.html('body') : $.html();
+}
+---
+
+<Layout>
+  <!-- Injected Styles from GrapesJS -->
+  <style set:html={finalCss}></style>
+  
+  <!-- Injected HTML from GrapesJS -->
+  <div set:html={finalHtml}></div>
+</Layout>
