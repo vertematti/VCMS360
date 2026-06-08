@@ -12,6 +12,12 @@
   <a href="mailto:gersonlv@gmail.com">Contato</a>
 </p>
 
+<p align="center">
+  <img alt="License: GPL v3" src="https://img.shields.io/badge/License-GPLv3-blue.svg">
+  <img alt="Node >= 22" src="https://img.shields.io/badge/node-%3E%3D22.12.0-brightgreen">
+  <img alt="Astro" src="https://img.shields.io/badge/Astro-6.x-orange">
+</p>
+
 ---
 
 ## 👤 Autor
@@ -28,7 +34,7 @@
 
 <img src="public/openmaker.png" alt="Open Maker" width="72" align="left" style="margin-right:14px;">
 
-Gerson é **Educador Maker voluntário** do [Open Maker](https://www.dispensados.com.br), iniciativa dedicada à promoção da educação criativa, tecnologia acessível e cultura maker. O VisualCMS360° nasceu desse espírito: uma ferramenta aberta, local e acessível para criadores de conteúdo.
+Gerson é **Educador Maker voluntário** do [Open Maker](https://www.dispensados.com.br), iniciativa dedicada à promoção da educação criativa, tecnologia acessível e cultura maker. O Visual CMS 360° nasceu desse espírito: uma ferramenta aberta, local e acessível para criadores de conteúdo.
 
 <br clear="left">
 
@@ -40,9 +46,9 @@ Gerson é **Educador Maker voluntário** do [Open Maker](https://www.dispensados
 - **Editor de componentes** — criação e reutilização de blocos customizados
 - **Tour Virtual 360°** — Foto 360° (Pannellum) e Vídeo 360° (A-Frame), com hotspots interativos de imagem, vídeo, tooltip e navegação entre cenas
 - **Galeria de Fotos** — lightbox com zoom, pan, fullscreen e suporte mobile-first
-- **Editor HTML/CSS/JS** — edição de código com indentação automática diretamente no editor
+- **Editor HTML/CSS/JS** — edição de código com syntax highlight e indentação automática
 - **Build integrado** — geração de site estático (`npm run build`) com log em tempo real
-- **Exportar/Importar** — backup e restauração do projeto em arquivo ZIP
+- **Exportar/Importar** — backup e restauração seletiva do projeto em arquivo ZIP
 - **Painel Sobre** — informações do projeto acessíveis no painel lateral
 - **Multi-página** — suporte a múltiplas páginas por projeto
 
@@ -98,8 +104,7 @@ VisualCMS360/
 │       └── [...slug].astro        # Renderização das páginas editadas
 ├── scripts/
 │   └── copy-vendor.mjs      # Copia vendor files do node_modules
-├── data/                    # Dados persistidos (criado em runtime)
-├── LICENSE                  # MIT License
+├── LICENSE                  # GNU GPL v3
 ├── NOTICE                   # Atribuições de terceiros
 └── package.json
 ```
@@ -111,47 +116,58 @@ VisualCMS360/
 | Tecnologia | Versão | Licença | Uso |
 |---|---|---|---|
 | [Astro](https://astro.build) | ^6.4 | MIT | Framework SSR/SSG |
-| [GrapesJS](https://grapesjs.com) | ^0.22 | **BSD-3-Clause** | Editor visual drag-and-drop |
+| [GrapesJS](https://grapesjs.com) | ^0.22 | BSD-3-Clause | Editor visual drag-and-drop |
 | [grapesjs-tailwind](https://github.com/digisquad/grapesjs-tailwind) | ^1.0 | MIT | Blocos Tailwind CSS |
-| [grapesjs-blocks-basic](https://github.com/GrapesJS/blocks-basic) | ^1.0 | **BSD-3-Clause** | Blocos básicos GrapesJS |
+| [grapesjs-blocks-basic](https://github.com/GrapesJS/blocks-basic) | ^1.0 | BSD-3-Clause | Blocos básicos GrapesJS |
 | [Pannellum](https://pannellum.org) | ^2.5 | MIT | Viewer de foto panorâmica 360° |
 | [A-Frame](https://aframe.io) | ^1.6 | MIT | Vídeo panorâmico 360° (WebVR) |
 | [Tailwind CSS](https://tailwindcss.com) | ^4.2 | MIT | Framework de estilização |
 | [Cheerio](https://cheerio.js.org) | ^1.2 | MIT | Parser HTML server-side |
+| [jQuery](https://jquery.com) | ^3.7 | MIT | Interatividade nas páginas publicadas |
+| [Font Awesome](https://fontawesome.com) | ^6.5 | MIT + SIL OFL | Ícones |
+
+> As dependências de terceiros **mantêm suas licenças originais** (MIT e BSD-3-Clause).
+> A GPL v3 se aplica exclusivamente ao código original do Visual CMS 360°.
 
 ---
 
-## 📄 Licenciamento
+## 📄 Licença
 
-### VisualCMS360° — MIT License
+**Visual CMS 360°** é software livre distribuído sob a
+**GNU General Public License versão 3** (GPL v3).
 
 ```
-Copyright (c) 2025 Gerson Luis Vertematti
+Visual CMS 360° — Editor CMS local com suporte a tours virtuais 360°
+Copyright (C) 2025  Gerson Luis Vertematti
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Este programa é software livre: você pode redistribuí-lo e/ou
+modificá-lo sob os termos da GNU General Public License conforme
+publicada pela Free Software Foundation, na versão 3 da Licença,
+ou (a seu critério) qualquer versão posterior.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Este programa é distribuído na esperança de que seja útil,
+mas SEM QUALQUER GARANTIA; sem mesmo a garantia implícita de
+COMERCIALIZAÇÃO ou ADEQUAÇÃO A UM DETERMINADO FIM.
+Veja a GNU General Public License para mais detalhes.
+
+Você deveria ter recebido uma cópia da GNU General Public License
+junto com este programa. Se não, veja <https://www.gnu.org/licenses/>.
 ```
 
-Veja o arquivo [LICENSE](./LICENSE) para o texto completo.
+Texto completo em: [LICENSE](./LICENSE) · [gnu.org/licenses/gpl-3.0](https://www.gnu.org/licenses/gpl-3.0.html)
 
-### Por que MIT e não CC BY 4.0?
+### O que isso significa na prática?
 
-A **Creative Commons CC BY 4.0** é projetada para obras criativas (textos, imagens, música). A própria Creative Commons [desaconselha seu uso para software](https://creativecommons.org/faq/#can-i-apply-a-creative-commons-license-to-software). A **MIT License** oferece o mesmo espírito de abertura e exigência de atribuição, sendo juridicamente adequada para código e reconhecida pela comunidade open-source mundial e pelo GitHub.
+| Você pode | Você deve |
+|---|---|
+| ✅ Usar livremente | 📋 Manter o aviso de copyright |
+| ✅ Estudar e modificar o código | 📋 Distribuir sob GPL v3 |
+| ✅ Distribuir cópias | 📋 Disponibilizar o código-fonte |
+| ✅ Distribuir versões modificadas | 📋 Indicar as modificações feitas |
+| ❌ Distribuir como software proprietário | — |
+| ❌ Sublicenciar sob outra licença | — |
 
 ### Dependências de Terceiros
-
-O projeto utiliza bibliotecas sob licenças **MIT** e **BSD-3-Clause**. A licença BSD-3-Clause (usada pelo GrapesJS) exige:
-
-1. ✅ Manter o aviso de copyright nas distribuições
-2. ✅ Reproduzir o aviso na documentação de builds binários
-3. ✅ Não usar o nome dos autores para endosso sem permissão
 
 Todas as atribuições estão documentadas em **[NOTICE](./NOTICE)**.
 
@@ -167,6 +183,9 @@ Contribuições são bem-vindas! Por favor:
 4. Push (`git push origin feature/MinhaFeature`)
 5. Abra um Pull Request
 
+Ao contribuir, você concorda que suas contribuições serão licenciadas
+sob a mesma GPL v3.
+
 ---
 
 ## ⚠️ Aviso de Uso
@@ -177,5 +196,6 @@ Este é um **editor local** — não está preparado para produção como servi�
 
 <p align="center">
   <a href="https://gersonlv.com.br">Gerson Luis Vertematti</a> ·
-  <a href="https://www.dispensados.com.br">Open Maker</a>
+  <a href="https://www.dispensados.com.br">Open Maker</a> ·
+  <a href="https://www.gnu.org/licenses/gpl-3.0.html">GNU GPL v3</a>
 </p>

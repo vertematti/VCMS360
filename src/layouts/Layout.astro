@@ -1,13 +1,23 @@
 ---
+// Visual CMS 360° — Copyright (C) 2025 Gerson Luis Vertematti
+// GNU GPL v3 — https://www.gnu.org/licenses/gpl-3.0.html
 import '../styles/global.css';
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Visual CMS</title>
+  <!-- Font Awesome local -->
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+  <!-- jQuery local -->
+  <script is:inline src="/vendor/jquery.min.js"></script>
+  <!-- Tailwind local (CDN-play via script) -->
+  <script is:inline>
+    /* Garantir que Tailwind via script funcione no site publicado */
+  </script>
 </head>
 <body>
   <slot />
@@ -612,27 +622,19 @@ import '../styles/global.css';
   ═════════════════════════════════════════════════════════════════ -->
   <link rel="stylesheet" href="/vendor/pannellum.min.css" />
   <script is:inline src="/vendor/pannellum.min.js"></script>
-  <!-- A-Frame: tenta local primeiro, CDN como fallback síncrono -->
-  <!-- O npm install copia o arquivo para /vendor/aframe.min.js automaticamente -->
+  <!-- A-Frame: carregado apenas do vendor local (copiado pelo npm install) -->
+  <!-- Sem fallback CDN — funciona 100% offline após npm install -->
   <script is:inline>
-    // Verificar se o arquivo local existe antes de tentar carregar
-    // Se não existir, usa o CDN diretamente de forma síncrona
-    window.__aframeReady = false;
+    window.__aframeReady  = false;
     window.__aframeFailed = false;
 
-    function __loadAframeCDN() {
-      var s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/aframe@1.7.1/dist/aframe.min.js';
-      s.onload  = function() { window.__aframeReady = true; };
-      s.onerror = function() { window.__aframeFailed = true; console.warn('[VT] A-Frame não pôde ser carregado. Vídeo 360° indisponível.'); };
-      document.head.appendChild(s);
-    }
-
-    // Tenta carregar local; em caso de erro (404), cai no CDN
     var __aframeLocal = document.createElement('script');
     __aframeLocal.src = '/vendor/aframe.min.js';
     __aframeLocal.onload  = function() { window.__aframeReady = true; };
-    __aframeLocal.onerror = function() { __loadAframeCDN(); };
+    __aframeLocal.onerror = function() {
+      window.__aframeFailed = true;
+      console.warn('[VT] aframe.min.js não encontrado em /vendor/. Execute "npm install" para copiar o arquivo local. Vídeo 360° indisponível.');
+    };
     document.head.appendChild(__aframeLocal);
   </script>
 

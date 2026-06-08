@@ -1,3 +1,6 @@
+// Visual CMS 360° — Copyright (C) 2025 Gerson Luis Vertematti
+// GNU GPL v3 — https://www.gnu.org/licenses/gpl-3.0.html
+
 import type { APIRoute } from 'astro';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -18,19 +21,19 @@ async function readComponents(): Promise<Record<string, any>> {
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { name, html, css, projectData } = body;
+    const { name, html, js, css, projectData } = body;
 
     if (!name || typeof name !== 'string') {
       return new Response(JSON.stringify({ error: 'name is required' }), { status: 400 });
     }
 
     const components = await readComponents();
-    components[name] = { name, html: html || '', css: css || '', projectData: projectData || {}, updatedAt: new Date().toISOString() };
+    components[name] = { name, html: html || '', js: js || '', css: css || '', projectData: projectData || {}, updatedAt: new Date().toISOString() };
 
     await fs.writeFile(filePath(), JSON.stringify(components, null, 2), 'utf-8');
 
     // Broadcast real-time update to all connected editors
-    broadcast('component:updated', { name, html: components[name].html, css: components[name].css });
+    broadcast('component:updated', { name, html: components[name].html, js: components[name].js || '', css: components[name].css });
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }

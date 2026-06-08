@@ -1,3 +1,6 @@
+// Visual CMS 360° — Copyright (C) 2025 Gerson Luis Vertematti
+// GNU GPL v3 — https://www.gnu.org/licenses/gpl-3.0.html
+
 import type { APIRoute } from 'astro';
 import fs from 'node:fs/promises';
 import path from 'node:path';

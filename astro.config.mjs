@@ -12,11 +12,6 @@ export default defineConfig({
     build: {
       target: 'es2020',   // permite async/await, for-of, spread, matchAll
     },
-    server: {
-      watch: {
-        ignored: ['**/src/data/pages.json', '**/src/data/components.json']
-      }
-    }
   },
 
   adapter: node({

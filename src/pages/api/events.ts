@@ -1,3 +1,6 @@
+// Visual CMS 360° — Copyright (C) 2025 Gerson Luis Vertematti
+// GNU GPL v3 — https://www.gnu.org/licenses/gpl-3.0.html
+
 export const prerender = false;
 
 // In-memory set of SSE clients

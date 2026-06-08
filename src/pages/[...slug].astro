@@ -1,34 +1,35 @@
 ---
+// Visual CMS 360° — Copyright (C) 2025 Gerson Luis Vertematti
+// GNU GPL v3 — https://www.gnu.org/licenses/gpl-3.0.html
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import * as cheerio from 'cheerio';
 import Layout from '../layouts/Layout.astro';
 
-// This function runs at build time to generate static paths
-export async function getStaticPaths() {
-  const filePath = path.resolve(process.cwd(), 'src/data/pages.json');
-  let pages = {};
-  
-  try {
-    const fileData = await fs.readFile(filePath, 'utf-8');
-    pages = JSON.parse(fileData);
-  } catch (e) {
-    console.error("Could not load pages.json");
-  }
+export const prerender = false;
 
-  return Object.keys(pages).map((slugKey) => {
-    return {
-      params: { slug: slugKey === 'index' ? undefined : slugKey },
-      props: { pageData: pages[slugKey] },
-    };
-  });
+// Load pages fresh on every request (SSR) — no stale cache
+const filePath = path.resolve(process.cwd(), 'src/data/pages.json');
+let pages: Record<string, any> = {};
+try {
+  const fileData = await fs.readFile(filePath, 'utf-8');
+  pages = JSON.parse(fileData);
+} catch (e) {
+  console.error("Could not load pages.json");
 }
 
-const { pageData } = Astro.props;
+// Resolve slug from URL params
+const rawSlug = Astro.params.slug;
+const slug = rawSlug || 'index';
+const pageData = pages[slug];
+
+if (!pageData) {
+  return new Response(null, { status: 404 });
+}
 
 // Load components data to inject the latest shared components
 const componentsPath = path.resolve(process.cwd(), 'src/data/components.json');
-let components = {};
+let components: Record<string, any> = {};
 try {
   const compData = await fs.readFile(componentsPath, 'utf-8');
   components = JSON.parse(compData);
@@ -36,6 +37,7 @@ try {
 
 let finalHtml = pageData.html || '';
 let finalCss = pageData.css || '';
+let finalJs = '';  // JS agregado de todos os componentes
 
 if (finalHtml) {
   const $ = cheerio.load(finalHtml);
@@ -43,21 +45,33 @@ if (finalHtml) {
   $('[data-component-id]').each((i, el) => {
     const id = $(el).attr('data-component-id');
     if (id && components[id]) {
-      // Inject the latest HTML from the component
       $(el).html(components[id].html || '');
-      // Append the component's CSS
       finalCss += '\n' + (components[id].css || '');
+      // Agregar JS do componente (separado do HTML)
+      const compJs = components[id].js || '';
+      if (compJs.trim()) finalJs += '\n// == Componente: ' + id + ' ==\n' + compJs + '\n';
     }
   });
-  
-  finalHtml = finalHtml.includes('<body') ? $.html('body') : $.html();
+
+  // Extract only the body content
+  if (finalHtml.includes('<body')) {
+    const bodyMatch = finalHtml.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    finalHtml = bodyMatch ? bodyMatch[1] : $.html('body');
+  } else {
+    finalHtml = $.html();
+  }
 }
 ---
 
 <Layout>
-  <!-- Injected Styles from GrapesJS -->
+  <!-- CSS from GrapesJS injected in slot (Layout puts slot in body) -->
   <style set:html={finalCss}></style>
   
-  <!-- Injected HTML from GrapesJS -->
-  <div set:html={finalHtml}></div>
+  <!-- Page HTML from GrapesJS -->
+  <Fragment set:html={finalHtml} />
+
+  <!-- JS dos componentes injetado após o HTML, com jQuery/FA já disponíveis -->
+  {finalJs.trim() && (
+    <script set:html={finalJs} is:inline></script>
+  )}
 </Layout>

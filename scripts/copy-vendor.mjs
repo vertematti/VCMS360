@@ -1,3 +1,16 @@
+// Visual CMS 360° — Editor CMS local com suporte a tours virtuais 360°
+// Copyright (C) 2025  Gerson Luis Vertematti <gersonlv@gmail.com>
+//
+// Este programa é software livre: você pode redistribuí-lo e/ou modificá-lo
+// sob os termos da GNU General Public License conforme publicada pela Free
+// Software Foundation, na versão 3 da Licença, ou (a seu critério) qualquer
+// versão posterior.
+//
+// Este programa é distribuído na esperança de que seja útil, mas SEM QUALQUER
+// GARANTIA. Veja a GNU General Public License para mais detalhes.
+//
+// <https://www.gnu.org/licenses/gpl-3.0.html>
+
 /**
  * copy-vendor.mjs
  * Executado automaticamente após cada "npm install" (postinstall).

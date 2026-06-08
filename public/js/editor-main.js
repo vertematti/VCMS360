@@ -1,3 +1,16 @@
+// Visual CMS 360° — Editor CMS local com suporte a tours virtuais 360°
+// Copyright (C) 2025  Gerson Luis Vertematti <gersonlv@gmail.com>
+//
+// Este programa é software livre: você pode redistribuí-lo e/ou modificá-lo
+// sob os termos da GNU General Public License conforme publicada pela Free
+// Software Foundation, na versão 3 da Licença, ou (a seu critério) qualquer
+// versão posterior.
+//
+// Este programa é distribuído na esperança de que seja útil, mas SEM QUALQUER
+// GARANTIA. Veja a GNU General Public License para mais detalhes.
+//
+// <https://www.gnu.org/licenses/gpl-3.0.html>
+
     // ── Verificar se os scripts carregaram corretamente ──────────────────────
     if (typeof grapesjs === 'undefined') {
       document.getElementById('gjs').innerHTML =
@@ -35,6 +48,10 @@
           fromElement: false,
           storageManager: false,
           allowScripts: 1,
+          canvas: {
+            scripts: ['/vendor/jquery.min.js'],
+            styles: ['/vendor/fontawesome/css/all.min.css'],
+          },
           plugins: cfg.plugins,
           pluginsOpts: {
             'grapesjs-tailwind': {},
@@ -2883,10 +2900,8 @@
     editor.Panels.addButton('views', [
       {
         id: 'import-code',
-        label: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" title="Importar / Editar HTML &amp; CSS">
-          <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
-          <path d="M12 17l1.5-1.5L11 13h8v-2h-8l2.5-2.5L12 7l-5 5 5 5z" opacity=".6"/>
-        </svg>`,
+        label: '',
+        className: 'gjs-pn-btn fa fa-code',
         command: 'import-code',
         attributes: { title: 'Importar / Editar HTML & CSS' },
         active: false,
@@ -2898,9 +2913,9 @@
     editor.Panels.addButton('views', [
       {
         id: 'cms-about',
-        label: `<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;padding:0 4px;">Sobre</span>`,
+        label: `<span style="font-size:13px;font-weight:700;letter-spacing:0.03em;padding:0 4px;">Sobre</span>`,
         command: 'cms-open-about',
-        attributes: { title: 'Sobre o VisualCMS360°' },
+        attributes: { title: 'Sobre o Visual CMS 360°' },
         active: false,
         togglable: true,
         className: 'gjs-pn-btn cms-about-btn',
@@ -2947,9 +2962,10 @@
             gap: 5px 12px;
             font-size: 12.5px;
             line-height: 1.6;
+            text-align: left;
           }
-          .cms-about-label { color: #6b7280; white-space: nowrap; }
-          .cms-about-value { color: #e2e4ef; }
+          .cms-about-label { color: #6b7280; white-space: nowrap; text-align: left; }
+          .cms-about-value { color: #e2e4ef; text-align: left; }
           .cms-about-link { color: #60a5fa; }
           .cms-about-lic-row {
             display: flex;
@@ -3003,7 +3019,10 @@
           </div>
 
           <div class="cms-about-section">
-            <h3 style="color:#60a5fa;">👤 Autor</h3>
+            <div style="text-align:center;margin-bottom:8px;">
+              <img src="/glv.png" alt="Gerson Luis Vertematti" style="height:40px;width:40px;border-radius:50%;object-fit:cover;opacity:0.95;">
+            </div>
+            <h3 style="color:#60a5fa;text-align:center;">Autor</h3>
             <div class="cms-about-grid">
               <span class="cms-about-label">Nome</span>
               <span class="cms-about-value" style="font-weight:600;">Gerson Luis Vertematti</span>
@@ -3021,12 +3040,15 @@
           <hr class="cms-about-divider">
 
           <div class="cms-about-section">
-            <h3 style="color:#34d399;">🌟 Open Maker</h3>
+            <div style="text-align:center;margin-bottom:8px;">
+              <img src="/openmaker.png" alt="Open Maker" style="height:40px;width:auto;opacity:0.92;">
+            </div>
+            <h3 style="color:#34d399;text-align:center;">Open Maker</h3>
             <p style="margin:0;font-size:12.5px;line-height:1.7;color:#c9cce0;">
               Gerson é <strong style="color:#34d399;">Educador Maker voluntário</strong> do
               <a style="color:#34d399;" href="https://www.dispensados.com.br" target="_blank">Open Maker</a>,
               iniciativa dedicada à educação criativa e cultura maker.
-              O VisualCMS360° nasceu desse espírito: uma ferramenta aberta e acessível para criadores de conteúdo.
+              O Visual CMS 360° nasceu desse espírito: uma ferramenta aberta e acessível para criadores de conteúdo.
             </p>
           </div>
 
@@ -3035,7 +3057,7 @@
           <div class="cms-about-section">
             <h3 style="color:#f59e0b;">📄 Licenças</h3>
             <div>
-              <div class="cms-about-lic-row"><span style="color:#e2e4ef;font-weight:600;">VisualCMS360°</span><span class="cms-about-badge">MIT</span></div>
+              <div class="cms-about-lic-row"><span style="color:#e2e4ef;font-weight:600;">Visual CMS 360°</span><span class="cms-about-badge">GPL v3</span></div>
               <div class="cms-about-lic-row"><span style="color:#9ca3af;">Astro / @astrojs/node</span><span class="cms-about-badge-sec">MIT</span></div>
               <div class="cms-about-lic-row"><span style="color:#9ca3af;">GrapesJS</span><span class="cms-about-badge-sec">BSD-3-Clause</span></div>
               <div class="cms-about-lic-row"><span style="color:#9ca3af;">grapesjs-blocks-basic</span><span class="cms-about-badge-sec">BSD-3-Clause</span></div>
@@ -3083,7 +3105,7 @@
       if (!logo || logo._cmsAboutBound) return;
       logo._cmsAboutBound = true;
       logo.style.cursor = 'pointer';
-      logo.title = 'Sobre o VisualCMS360°';
+      logo.title = 'Sobre o Visual CMS 360°';
       logo.addEventListener('click', function() {
         var panel = document.getElementById('cms-about-panel');
         var isOpen = panel && panel.classList.contains('active');
@@ -3092,58 +3114,311 @@
       });
     }
 
-    // ── Export: baixa ZIP com pages.json + components.json + uploads ────────
-    function cmsExportProject() {
-      const a = document.createElement('a');
-      a.href = '/api/export';
-      a.download = '';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+    // ── Export: modal com seleção de páginas, componentes e nome do arquivo ──
+    async function cmsExportProject() {
+      // 1. Buscar lista de páginas e componentes disponíveis
+      let pages = [], components = [];
+      try {
+        const res = await fetch('/api/export', { method: 'POST' });
+        const data = await res.json();
+        pages = data.pages || [];
+        components = data.components || [];
+      } catch (e) {
+        alert('Erro ao carregar dados para exportação.'); return;
+      }
+
+      // 2. Montar modal
+      const date = new Date().toISOString().slice(0,10);
+      const suggestedName = 'visualcms360-export-' + date;
+
+      editor.Modal.setTitle('⬆️ Exportar Projeto');
+
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'font-family:sans-serif;display:flex;flex-direction:column;gap:0;padding:16px;height:calc(96vh - 56px);box-sizing:border-box;';
+
+      wrap.innerHTML = `
+        <style>
+          .exp-section { margin-bottom:14px; }
+          .exp-section-title { font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px; }
+          .exp-checklist { background:#0d0d1a;border:1px solid #2a2a3e;border-radius:6px;padding:8px 10px;flex:1;overflow-y:auto;max-height:180px; }
+          .exp-check-item { display:flex;align-items:center;gap:8px;padding:4px 2px;border-radius:4px;cursor:pointer; }
+          .exp-check-item:hover { background:rgba(255,255,255,0.04); }
+          .exp-check-item input[type=checkbox] { width:14px;height:14px;cursor:pointer;accent-color:#3b82f6; }
+          .exp-check-item label { font-size:12px;color:#d4d4d4;cursor:pointer;font-family:monospace; }
+          .exp-select-all { font-size:11px;color:#3b82f6;cursor:pointer;margin-bottom:6px;display:inline-block; }
+          .exp-select-all:hover { text-decoration:underline; }
+          .exp-filename { width:100%;box-sizing:border-box;background:#0d0d1a;color:#d4d4d4;border:1px solid #334155;border-radius:6px;padding:8px 12px;font-size:13px;font-family:monospace;outline:none; }
+          .exp-filename:focus { border-color:#3b82f6; }
+          .exp-footer { display:flex;justify-content:flex-end;gap:8px;margin-top:12px;flex-shrink:0; }
+          .exp-btn-cancel { padding:8px 18px;border-radius:6px;border:none;background:rgba(255,255,255,0.07);color:#9ca3af;font-size:13px;cursor:pointer; }
+          .exp-btn-cancel:hover { background:rgba(255,255,255,0.13); }
+          .exp-btn-ok { padding:8px 22px;border-radius:6px;border:none;background:#3b82f6;color:#fff;font-size:13px;font-weight:700;cursor:pointer; }
+          .exp-btn-ok:hover { background:#2563eb; }
+          .exp-empty { color:#4b5563;font-size:12px;font-style:italic;padding:4px 2px; }
+        </style>
+
+        <div class="exp-section">
+          <div class="exp-section-title">Nome do arquivo</div>
+          <input class="exp-filename" id="exp-filename" type="text" value="${suggestedName}" />
+        </div>
+
+        <div class="exp-section" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+          <div class="exp-section-title">
+            Páginas
+            <span class="exp-select-all" id="exp-pages-all">Selecionar tudo</span>
+          </div>
+          <div class="exp-checklist" id="exp-pages-list">
+            ${pages.length === 0 ? '<div class="exp-empty">Nenhuma página encontrada</div>' :
+              pages.map(p => `<div class="exp-check-item">
+                <input type="checkbox" id="exp-p-${p}" value="${p}" checked>
+                <label for="exp-p-${p}">${p}</label>
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <div class="exp-section" style="display:flex;flex-direction:column;flex:1;min-height:0;margin-top:10px;">
+          <div class="exp-section-title">
+            Componentes
+            <span class="exp-select-all" id="exp-comps-all">Selecionar tudo</span>
+          </div>
+          <div class="exp-checklist" id="exp-comps-list">
+            ${components.length === 0 ? '<div class="exp-empty">Nenhum componente encontrado</div>' :
+              components.map(c => `<div class="exp-check-item">
+                <input type="checkbox" id="exp-c-${c}" value="${c}" checked>
+                <label for="exp-c-${c}">${c}</label>
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <div class="exp-footer">
+          <button class="exp-btn-cancel" id="exp-cancel">Cancelar</button>
+          <button class="exp-btn-ok" id="exp-ok">⬆️ Exportar ZIP</button>
+        </div>
+      `;
+
+      editor.Modal.setContent(wrap);
+      editor.Modal.open();
+      setTimeout(() => {
+        const dlg = document.querySelector('.gjs-mdl-dialog');
+        if (dlg) { dlg.style.width = 'min(560px,95vw)'; dlg.style.maxHeight = '96vh'; dlg.style.height = '96vh'; }
+        const cont = document.querySelector('.gjs-mdl-content');
+        if (cont) { cont.style.padding = '0'; cont.style.overflow = 'hidden'; }
+      }, 30);
+
+      // ── Selecionar tudo toggle ─────────────────────────────────────────────
+      function makeToggleAll(linkId, listId) {
+        const link = wrap.querySelector('#' + linkId);
+        const list = wrap.querySelector('#' + listId);
+        if (!link || !list) return;
+        let allOn = true;
+        link.addEventListener('click', function() {
+          allOn = !allOn;
+          list.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.checked = allOn; });
+          link.textContent = allOn ? 'Selecionar tudo' : 'Desmarcar tudo';
+        });
+      }
+      makeToggleAll('exp-pages-all', 'exp-pages-list');
+      makeToggleAll('exp-comps-all', 'exp-comps-list');
+
+      // ── Cancelar ──────────────────────────────────────────────────────────
+      wrap.querySelector('#exp-cancel').onclick = function() { editor.Modal.close(); };
+
+      // ── Exportar ──────────────────────────────────────────────────────────
+      wrap.querySelector('#exp-ok').onclick = function() {
+        const filename = (wrap.querySelector('#exp-filename').value || suggestedName).trim();
+        const selPages = [...wrap.querySelectorAll('#exp-pages-list input:checked')].map(function(el) { return el.value; });
+        const selComps = [...wrap.querySelectorAll('#exp-comps-list input:checked')].map(function(el) { return el.value; });
+
+        if (selPages.length === 0 && selComps.length === 0) {
+          alert('Selecione ao menos uma página ou componente para exportar.'); return;
+        }
+
+        const params = new URLSearchParams();
+        params.set('filename', filename);
+        if (selPages.length)  params.set('pages', selPages.join(','));
+        if (selComps.length)  params.set('components', selComps.join(','));
+
+        const a = document.createElement('a');
+        a.href = '/api/export?' + params.toString();
+        a.download = filename + '.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        editor.Modal.close();
+      };
     }
 
-    // ── Import: abre picker de arquivo ZIP e envia para /api/import ──────────
+    // ── Import: modal com preview, checkboxes e detecção de conflitos ─────────
     function cmsImportProject() {
       const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.zip';
-      input.onchange = async () => {
+      input.type = 'file'; input.accept = '.zip';
+      input.onchange = async function() {
         const file = input.files && input.files[0];
         if (!file) return;
 
+        // ── Etapa 1: preview ───────────────────────────────────────────────
+        editor.Modal.setTitle('⬇️ Importar Projeto');
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'font-family:sans-serif;display:flex;flex-direction:column;gap:0;padding:16px;height:calc(96vh - 56px);box-sizing:border-box;';
+
+        const style = document.createElement('style');
+        style.textContent = `
+          .imp-section { margin-bottom:12px; display:flex; flex-direction:column; }
+          .imp-section-title { font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px; }
+          .imp-checklist { background:#0d0d1a;border:1px solid #2a2a3e;border-radius:6px;padding:8px 10px;flex:1;overflow-y:auto;max-height:160px; }
+          .imp-check-item { display:flex;align-items:center;gap:8px;padding:4px 2px;border-radius:4px;cursor:pointer; }
+          .imp-check-item:hover { background:rgba(255,255,255,0.04); }
+          .imp-check-item input[type=checkbox] { width:14px;height:14px;cursor:pointer;accent-color:#3b82f6; }
+          .imp-check-item label { font-size:12px;color:#d4d4d4;cursor:pointer;font-family:monospace; }
+          .imp-conflict { color:#f59e0b !important; }
+          .imp-select-all { font-size:11px;color:#3b82f6;cursor:pointer;margin-bottom:6px;display:inline-block; }
+          .imp-select-all:hover { text-decoration:underline; }
+          .imp-footer { display:flex;justify-content:flex-end;gap:8px;margin-top:10px;flex-shrink:0; }
+          .imp-btn { padding:8px 18px;border-radius:6px;border:none;font-size:13px;cursor:pointer;font-weight:600; }
+          .imp-btn-cancel { background:rgba(255,255,255,0.07);color:#9ca3af; }
+          .imp-btn-cancel:hover { background:rgba(255,255,255,0.13); }
+          .imp-btn-ok { background:#3b82f6;color:#fff; }
+          .imp-btn-ok:hover { background:#2563eb; }
+          .imp-btn-force { background:#b45309;color:#fff; }
+          .imp-btn-force:hover { background:#92400e; }
+          .imp-conflict-box { background:#1c1007;border:1px solid #92400e;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#fbbf24;line-height:1.6;flex-shrink:0; }
+          .imp-conflict-box strong { color:#f59e0b; }
+          .imp-uploads { font-size:11px;color:#4b5563;margin-top:4px; }
+          .imp-empty { color:#4b5563;font-size:12px;font-style:italic;padding:4px 2px; }
+          .imp-loading { color:#9ca3af;font-size:13px;padding:20px 0; text-align:center; }
+          .imp-success { color:#34d399;font-weight:600;margin-bottom:8px; }
+          .imp-error { color:#f87171; }
+        `;
+        wrap.appendChild(style);
+
+        const loadingEl = document.createElement('div');
+        loadingEl.className = 'imp-loading'; loadingEl.textContent = '⏳ Analisando arquivo...';
+        wrap.appendChild(loadingEl);
+
+        editor.Modal.setContent(wrap);
         editor.Modal.open();
-        editor.Modal.setTitle('Importar Projeto');
-        const body = document.createElement('div');
-        body.style.cssText = 'padding:20px;font-family:sans-serif;color:#ddd;';
-        body.textContent = 'Enviando e restaurando dados...';
-        editor.Modal.setContent(body);
+        setTimeout(() => {
+          const dlg = document.querySelector('.gjs-mdl-dialog');
+          if (dlg) { dlg.style.width = 'min(560px,95vw)'; dlg.style.maxHeight = '96vh'; dlg.style.height = '96vh'; }
+          const cont = document.querySelector('.gjs-mdl-content');
+          if (cont) { cont.style.padding = '0'; cont.style.overflow = 'hidden'; }
+        }, 30);
 
-        const form = new FormData();
-        form.append('file', file);
-
+        // Enviar para preview
+        let preview;
         try {
-          const res = await fetch('/api/import', { method: 'POST', body: form });
-          const json = await res.json();
-          if (json.success) {
-            const list = json.imported.map(function(f) { return '<li>' + f + '</li>'; }).join('');
-            body.innerHTML =
-              '<p style="color:#34d399;font-weight:600;">Importacao concluida!</p>' +
-              '<p style="color:#9ca3af;font-size:13px;">Arquivos restaurados: ' + json.imported.length + '</p>' +
-              '<ul style="color:#9ca3af;font-size:12px;margin:8px 0 16px 18px;">' + list + '</ul>' +
-              '<p style="color:#fbbf24;font-size:12px;">Recarregue o editor para ver as paginas importadas.</p>' +
-              '<button onclick="location.reload()" style="margin-top:12px;padding:8px 18px;background:#4f46e5;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">Recarregar agora</button>';
-          } else {
-            body.innerHTML = '<p style="color:#f87171;">Erro: ' + (json.error || 'falha desconhecida') + '</p>';
-          }
-        } catch (err) {
-          body.innerHTML = '<p style="color:#f87171;">Erro de rede: ' + err + '</p>';
+          const form = new FormData(); form.append('file', file);
+          const res = await fetch('/api/import?action=preview', { method: 'POST', body: form });
+          preview = await res.json();
+        } catch(e) {
+          loadingEl.className = 'imp-error'; loadingEl.textContent = 'Erro ao analisar o arquivo ZIP.'; return;
         }
+        loadingEl.remove();
+
+        const { pages=[], components=[], uploads=[], pageConflicts=[], compConflicts=[] } = preview;
+        const hasConflicts = pageConflicts.length > 0 || compConflicts.length > 0;
+
+        // ── Montar conteúdo do modal ───────────────────────────────────────
+        function makeSection(title, items, conflicts, idPrefix) {
+          const sec = document.createElement('div');
+          sec.className = 'imp-section'; sec.style.flex = '1'; sec.style.minHeight = '0';
+          const hdr = document.createElement('div'); hdr.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:6px;';
+          const t = document.createElement('span'); t.className = 'imp-section-title'; t.textContent = title;
+          const sa = document.createElement('span'); sa.className = 'imp-select-all'; sa.textContent = 'Selecionar tudo';
+          hdr.appendChild(t); hdr.appendChild(sa);
+          const list = document.createElement('div'); list.className = 'imp-checklist';
+          if (items.length === 0) { list.innerHTML = '<div class="imp-empty">Nenhum item encontrado</div>'; }
+          else {
+            items.forEach(function(item) {
+              const isConflict = conflicts.includes(item);
+              const row = document.createElement('div'); row.className = 'imp-check-item';
+              const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = idPrefix+item; cb.value = item; cb.checked = true;
+              const lbl = document.createElement('label'); lbl.htmlFor = idPrefix+item;
+              lbl.textContent = item + (isConflict ? ' ⚠ será sobrescrito' : '');
+              if (isConflict) lbl.className = 'imp-conflict';
+              row.appendChild(cb); row.appendChild(lbl); list.appendChild(row);
+            });
+          }
+          let allOn = true;
+          sa.addEventListener('click', function() {
+            allOn = !allOn;
+            list.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.checked = allOn; });
+            sa.textContent = allOn ? 'Selecionar tudo' : 'Desmarcar tudo';
+          });
+          sec.appendChild(hdr); sec.appendChild(list);
+          return sec;
+        }
+
+        // Aviso de conflitos
+        if (hasConflicts) {
+          const box = document.createElement('div'); box.className = 'imp-conflict-box';
+          const list = [...pageConflicts.map(function(p){ return '📄 página: '+p; }), ...compConflicts.map(function(c){ return '🧩 componente: '+c; })].join('<br>');
+          box.innerHTML = '<strong>⚠️ Conflitos detectados</strong> — os itens abaixo já existem e serão sobrescritos se selecionados:<br>' + list + '<br><br>Desmarque os itens que não quer sobrescrever, ou clique em <strong>Forçar Importação</strong> para importar tudo.';
+          wrap.appendChild(box);
+        }
+
+        wrap.appendChild(makeSection('Páginas', pages, pageConflicts, 'imp-p-'));
+        wrap.appendChild(makeSection('Componentes', components, compConflicts, 'imp-c-'));
+
+        if (uploads.length > 0) {
+          const u = document.createElement('div'); u.className = 'imp-uploads';
+          u.textContent = '📎 ' + uploads.length + ' upload(s) incluído(s) no ZIP serão restaurados automaticamente.';
+          wrap.appendChild(u);
+        }
+
+        // Footer
+        const footer = document.createElement('div'); footer.className = 'imp-footer';
+        const btnCancel = document.createElement('button'); btnCancel.className = 'imp-btn imp-btn-cancel'; btnCancel.textContent = 'Cancelar';
+        btnCancel.onclick = function() { editor.Modal.close(); };
+
+        async function doImport(forceAll) {
+          const selPages = forceAll ? pages : [...wrap.querySelectorAll('[id^="imp-p-"]:checked')].map(function(el) { return el.value; });
+          const selComps = forceAll ? components : [...wrap.querySelectorAll('[id^="imp-c-"]:checked')].map(function(el) { return el.value; });
+          if (!forceAll && selPages.length === 0 && selComps.length === 0) { alert('Selecione ao menos um item para importar.'); return; }
+
+          footer.innerHTML = '<span style="color:#9ca3af;font-size:13px;">⏳ Importando...</span>';
+
+          const form = new FormData(); form.append('file', file);
+          if (selPages.length)  form.append('pages', selPages.join(','));
+          if (selComps.length)  form.append('components', selComps.join(','));
+
+          try {
+            const res  = await fetch('/api/import?action=commit', { method: 'POST', body: form });
+            const json = await res.json();
+            if (json.success) {
+              wrap.innerHTML = '';
+              const ok = document.createElement('div'); ok.style.cssText = 'padding:24px;display:flex;flex-direction:column;gap:12px;';
+              ok.innerHTML = '<p class="imp-success">✅ Importação concluída com sucesso!</p>'
+                + '<p style="color:#9ca3af;font-size:13px;">' + json.imported.length + ' item(ns) importado(s).</p>'
+                + '<ul style="color:#9ca3af;font-size:12px;margin:0 0 8px 16px;">' + json.imported.map(function(i){ return '<li>'+i+'</li>'; }).join('') + '</ul>'
+                + '<p style="color:#fbbf24;font-size:12px;">Recarregue o editor para ver as alterações.</p>'
+                + '<button onclick="location.reload()" style="padding:8px 18px;background:#4f46e5;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;align-self:flex-start;">Recarregar agora</button>';
+              wrap.appendChild(ok);
+            } else {
+              footer.innerHTML = '<span style="color:#f87171;">Erro: ' + (json.error||'falha') + '</span>';
+            }
+          } catch(e) {
+            footer.innerHTML = '<span style="color:#f87171;">Erro de rede.</span>';
+          }
+        }
+
+        const btnOk = document.createElement('button'); btnOk.className = 'imp-btn imp-btn-ok'; btnOk.textContent = '⬇️ Importar selecionados';
+        btnOk.onclick = function() { doImport(false); };
+
+        footer.appendChild(btnCancel);
+        if (hasConflicts) {
+          const btnForce = document.createElement('button'); btnForce.className = 'imp-btn imp-btn-force'; btnForce.textContent = '⚠️ Forçar tudo';
+          btnForce.onclick = function() { doImport(true); };
+          footer.appendChild(btnForce);
+        }
+        footer.appendChild(btnOk);
+        wrap.appendChild(footer);
       };
       input.click();
     }
 
 
-    // ── Build: abre modal com progresso em tempo real ────────────────────────
+        // ── Build: abre modal com progresso em tempo real ────────────────────────
     function runBuild() {
       // Marcar botão como "building"
       const buildBtnEl = document.querySelector('.cms-build-btn');
@@ -3151,7 +3426,7 @@
 
       // ── Modal de progresso ────────────────────────────────────────────────
       const outer = document.createElement('div');
-      outer.style.cssText = 'font-family:sans-serif;width:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;';
+      outer.style.cssText = 'font-family:sans-serif;width:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;padding:12px;height:calc(96vh - 56px);';
 
       // Barra de status
       const statusBar = document.createElement('div');
@@ -3180,13 +3455,13 @@
       const log = document.createElement('pre');
       log.style.cssText = [
         'background:#0d0d1a;color:#d4d4d4;border:1px solid #2a2a3e;border-radius:6px;',
-        'padding:14px;font-size:12px;line-height:1.6;height:260px;overflow-y:auto;',
+        'padding:14px;font-size:12px;line-height:1.6;flex:1;min-height:0;overflow-y:auto;',
         'margin:0;white-space:pre-wrap;word-break:break-word;font-family:monospace;',
       ].join('');
 
       // Footer
       const footer = document.createElement('div');
-      footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
+      footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center;flex-shrink:0;padding-top:4px;';
 
       const footerNote = document.createElement('span');
       footerNote.style.cssText = 'font-size:11px;color:#555;';
@@ -3207,6 +3482,14 @@
       editor.Modal.setTitle('🏗️ Build do Site');
       editor.Modal.setContent(outer);
       editor.Modal.open();
+
+      // Ajustar tamanho do modal igual ao importador
+      setTimeout(() => {
+        const dlg = document.querySelector('.gjs-mdl-dialog');
+        if (dlg) { dlg.style.width = 'min(900px, 95vw)'; dlg.style.maxHeight = '96vh'; dlg.style.height = '96vh'; }
+        const cont = document.querySelector('.gjs-mdl-content');
+        if (cont) { cont.style.padding = '0'; cont.style.overflow = 'hidden'; }
+      }, 30);
 
       // ── Helpers ───────────────────────────────────────────────────────────
       const append = (text, color) => {
@@ -3340,7 +3623,6 @@
       run(ed, sender) {
         sender && sender.set('active', 0);
 
-        /* Extrair JS existente do HTML atual (tags <script>...</script>) */
         function extractScripts(html) {
           const matches = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)];
           return matches.map(m => m[1].trim()).filter(Boolean).join('\n\n');
@@ -3349,34 +3631,205 @@
           return html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').trim();
         }
 
-        const currentHtml = ed.getHtml();
+        // ── Syntax highlighter simples ──────────────────────────────────────
+        function highlightHTML(code) {
+          return code
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            // strings em atributos
+            .replace(/(&quot;[^&]*&quot;|'[^']*')/g,'<span style="color:#ce9178">$1</span>')
+            // tags
+            .replace(/(&lt;\/?)([\w-]+)/g,'$1<span style="color:#4ec9b0">$2</span>')
+            // atributos
+            .replace(/\s([\w:-]+)=/g,' <span style="color:#9cdcfe">$1</span>=')
+            // comentários
+            .replace(/(&lt;!--[\s\S]*?--&gt;)/g,'<span style="color:#6a9955">$1</span>');
+        }
+        function highlightCSS(code) {
+          return code
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            // comentários
+            .replace(/(\/\*[\s\S]*?\*\/)/g,'<span style="color:#6a9955">$1</span>')
+            // seletores
+            .replace(/^([^{}\n]+)\{/gm,'<span style="color:#d7ba7d">$1</span>{')
+            // propriedades
+            .replace(/^\s+([\w-]+):/gm,(m,p)=>`  <span style="color:#9cdcfe">${p}</span>:`)
+            // valores
+            .replace(/:\s*([^;{\n]+)/g,(m,v)=>`: <span style="color:#ce9178">${v}</span>`);
+        }
+        function highlightJS(code) {
+          return code
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/(\/\/[^\n]*)/g,'<span style="color:#6a9955">$1</span>')
+            .replace(/(\/\*[\s\S]*?\*\/)/g,'<span style="color:#6a9955">$1</span>')
+            .replace(/\b(var|let|const|function|return|if|else|for|while|do|new|this|class|import|export|from|async|await|try|catch|finally|typeof|instanceof|null|undefined|true|false)\b/g,'<span style="color:#c586c0">$1</span>')
+            .replace(/(['"``])(.*?)\1/g,'<span style="color:#ce9178">$1$2$1</span>');
+        }
+
+        // ── Editor sintático baseado em div[contenteditable] ────────────────
+        function makeEditor(id, lang, placeholder='') {
+          const wrap = document.createElement('div');
+          wrap.style.cssText = 'position:relative;border:1px solid #444;border-radius:4px;background:#0d0d1a;overflow:hidden;flex:1;min-height:80px;';
+
+          const nums = document.createElement('div');
+          nums.style.cssText = 'position:absolute;top:0;left:0;width:34px;padding:12px 0;text-align:right;color:#555;font:12px/1.6 monospace;user-select:none;background:#080810;border-right:1px solid #333;overflow:hidden;box-sizing:border-box;';
+
+          const hi = document.createElement('div');
+          hi.style.cssText = 'position:absolute;inset:0;left:38px;padding:12px;font:12px/1.6 monospace;white-space:pre;pointer-events:none;overflow:hidden;word-break:break-all;color:#d4d4d4;';
+
+          const ta = document.createElement('textarea');
+          ta.id = id;
+          ta.placeholder = placeholder;
+          ta.spellcheck = false;
+          ta.style.cssText = 'position:relative;left:38px;width:calc(100% - 38px);height:100%;background:transparent;color:transparent;caret-color:#fff;padding:12px;border:none;outline:none;font:12px/1.6 monospace;resize:none;box-sizing:border-box;white-space:pre;overflow-x:auto;';
+
+          function renderHighlight() {
+            const val = ta.value;
+            const lines = val.split('\n');
+            nums.innerHTML = lines.map((_,i)=>`<div style="padding:0 6px">${i+1}</div>`).join('');
+            let highlighted;
+            if (lang==='html') highlighted = highlightHTML(val);
+            else if (lang==='css') highlighted = highlightCSS(val);
+            else highlighted = highlightJS(val);
+            hi.innerHTML = highlighted + '\n';
+            // sync scroll
+            hi.scrollTop = ta.scrollTop;
+            hi.scrollLeft = ta.scrollLeft;
+          }
+
+          ta.addEventListener('input', renderHighlight);
+          ta.addEventListener('scroll', ()=>{
+            hi.scrollTop = ta.scrollTop;
+            hi.scrollLeft = ta.scrollLeft;
+            nums.scrollTop = ta.scrollTop;
+          });
+          ta.addEventListener('keydown', e=>{
+            if (e.key==='Tab') {
+              e.preventDefault();
+              const s = ta.selectionStart, end = ta.selectionEnd;
+              ta.value = ta.value.slice(0,s) + '  ' + ta.value.slice(end);
+              ta.selectionStart = ta.selectionEnd = s+2;
+              renderHighlight();
+            }
+          });
+
+          wrap.appendChild(nums);
+          wrap.appendChild(hi);
+          wrap.appendChild(ta);
+          wrap._ta = ta;
+          wrap._render = renderHighlight;
+          return wrap;
+        }
+
+        // ── Modal content ───────────────────────────────────────────────────
+        const modalStyle = document.createElement('style');
+        modalStyle.textContent = `
+          #imp-modal-wrap { display:flex; flex-direction:column; height:calc(94vh - 56px); padding:10px; gap:6px; overflow:hidden; }
+          .imp-section { display:flex; flex-direction:column; gap:4px; min-height:0; }
+          .imp-section.collapsed .imp-editor-wrap { display:none !important; }
+          .imp-section-hdr {
+            display:flex; align-items:center; gap:6px;
+            cursor:pointer; user-select:none;
+            padding:4px 8px; border-radius:4px;
+            background:rgba(255,255,255,0.05);
+            color:#ccc; font-size:12px; font-weight:600;
+          }
+          .imp-section-hdr:hover { background:rgba(255,255,255,0.09); }
+          .imp-section-hdr .imp-arrow { font-size:10px; transition:transform .2s; }
+          .imp-section.collapsed .imp-arrow { transform:rotate(-90deg); }
+          .imp-section-hdr .imp-badge { margin-left:auto; font-size:10px; color:#666; font-weight:400; }
+          .imp-editor-wrap { flex:1; display:flex; min-height:0; }
+          .imp-section:not(.collapsed) { flex:1; }
+          #imp-apply-btn {
+            background:#3b82f6;color:#fff;border:none;border-radius:4px;
+            padding:8px 20px;cursor:pointer;font-size:13px;font-weight:600;
+            margin-top:6px; align-self:flex-end; flex-shrink:0;
+          }
+          #imp-apply-btn:hover { background:#2563eb; }
+        `;
+        document.head.appendChild(modalStyle);
 
         const wrap = document.createElement('div');
-        wrap.style.padding = '10px';
-        wrap.innerHTML = `
-          <div style="margin-bottom:5px;color:#ccc;font-size:12px;font-weight:600;">HTML</div>
-          <textarea id="imp-html" style="width:100%;height:220px;background:#0d0d1a;color:#d4d4d4;padding:12px;border:1px solid #444;margin-bottom:12px;font-family:monospace;font-size:12px;line-height:1.6;border-radius:4px;resize:vertical;box-sizing:border-box;"></textarea>
-          <div style="margin-bottom:5px;color:#ccc;font-size:12px;font-weight:600;">CSS</div>
-          <textarea id="imp-css" style="width:100%;height:130px;background:#0d0d1a;color:#d4d4d4;padding:12px;border:1px solid #444;margin-bottom:12px;font-family:monospace;font-size:12px;line-height:1.6;border-radius:4px;resize:vertical;box-sizing:border-box;"></textarea>
-          <div style="margin-bottom:5px;color:#ccc;font-size:12px;font-weight:600;">JavaScript</div>
-          <textarea id="imp-js" style="width:100%;height:120px;background:#0d0d1a;color:#d4d4d4;padding:12px;border:1px solid #444;margin-bottom:15px;font-family:monospace;font-size:12px;line-height:1.6;border-radius:4px;resize:vertical;box-sizing:border-box;" placeholder="// Seu JavaScript aqui (sem as tags <script>)"></textarea>
-          <button id="imp-apply" style="background:#3b82f6;color:#fff;border:none;border-radius:4px;padding:8px 20px;cursor:pointer;font-size:13px;">Aplicar</button>
-        `;
-        wrap.querySelector('#imp-html').value = formatHTML(stripScripts(currentHtml));
-        wrap.querySelector('#imp-css').value  = formatCSS(ed.getCss());
-        wrap.querySelector('#imp-js').value   = extractScripts(currentHtml);
-        wrap.querySelector('#imp-apply').onclick = () => {
-          let html = wrap.querySelector('#imp-html').value;
-          const js = wrap.querySelector('#imp-js').value.trim();
+        wrap.id = 'imp-modal-wrap';
+
+        function makeSection(label, langTag, color, placeholder='') {
+          const sec = document.createElement('div');
+          sec.className = 'imp-section';
+
+          const hdr = document.createElement('div');
+          hdr.className = 'imp-section-hdr';
+          hdr.innerHTML = `<span class="imp-arrow">▼</span> <span style="color:${color}">${label}</span> <span class="imp-badge">${langTag}</span>`;
+
+          const edWrap = document.createElement('div');
+          edWrap.className = 'imp-editor-wrap';
+
+          const ed2 = makeEditor(`imp-${langTag}`, langTag, placeholder);
+          ed2.style.width = '100%';
+          edWrap.appendChild(ed2);
+
+          hdr.addEventListener('click', ()=>{
+            sec.classList.toggle('collapsed');
+          });
+
+          sec.appendChild(hdr);
+          sec.appendChild(edWrap);
+          sec._editor = ed2;
+          return sec;
+        }
+
+        const secHtml = makeSection('HTML', 'html', '#4ec9b0');
+        const secCss  = makeSection('CSS',  'css',  '#d7ba7d');
+        const secJs   = makeSection('JavaScript', 'js', '#c586c0', '// Seu JavaScript aqui (sem as tags <script>)');
+
+        // Start CSS and JS collapsed
+        secCss.classList.add('collapsed');
+        secJs.classList.add('collapsed');
+
+        const applyBtn = document.createElement('button');
+        applyBtn.id = 'imp-apply-btn';
+        applyBtn.textContent = '✓ Aplicar';
+
+        wrap.appendChild(secHtml);
+        wrap.appendChild(secCss);
+        wrap.appendChild(secJs);
+        wrap.appendChild(applyBtn);
+
+        const currentHtml = ed.getHtml();
+        // GrapesJS retorna <body>...</body> — extrair apenas o conteúdo interno
+        const innerHtml = currentHtml.replace(/^<body[^>]*>([\s\S]*)<\/body>$/i, '$1').trim();
+        secHtml._editor._ta.value = formatHTML(stripScripts(innerHtml));
+        secCss._editor._ta.value  = formatCSS(ed.getCss());
+        secJs._editor._ta.value   = extractScripts(currentHtml);
+        secHtml._editor._render();
+        secCss._editor._render();
+        secJs._editor._render();
+
+        applyBtn.onclick = () => {
+          let html = secHtml._editor._ta.value;
+          const js = secJs._editor._ta.value.trim();
           if (js) html += '\n<script>\n' + js + '\n<\/script>';
           ed.setComponents(html);
-          ed.setStyle(wrap.querySelector('#imp-css').value);
+          ed.setStyle(secCss._editor._ta.value);
           ed.Modal.close();
         };
 
-        ed.Modal.setTitle('Editar / Importar Código');
+        // Make GrapesJS modal taller
+        ed.Modal.setTitle('✏️ Editar / Importar Código');
         ed.Modal.setContent(wrap);
         ed.Modal.open();
+
+        // Force modal to be taller after open
+        setTimeout(()=>{
+          const dlg = document.querySelector('.gjs-mdl-dialog');
+          if (dlg) {
+            dlg.style.width = 'min(900px, 95vw)';
+            dlg.style.maxHeight = '94vh';
+            dlg.style.height = '94vh';
+          }
+          const cont = document.querySelector('.gjs-mdl-content');
+          if (cont) { cont.style.padding = '0'; cont.style.overflow = 'hidden'; }
+          // trigger render after layout is known
+          [secHtml, secCss, secJs].forEach(s => s._editor._render());
+        }, 30);
       }
     });
 
@@ -3456,6 +3909,35 @@
     }
 
     // ── Wire up events AFTER the panel is rendered (editor 'load') ────────────
+
+      // ── Remover botão nativo "View Code" do GrapesJS ─────────────────────
+      (function removeViewCodeBtn() {
+        function doRemove() {
+          // Remover via Panels API
+          try { editor.Panels.removeButton('options', 'export-template'); } catch(e) {}
+          // Variável xf do GrapesJS mapeia para 'gjs-open-code' ou similar
+          // Remover qualquer botão do painel options com className fa-code
+          var panel = editor.Panels.getPanel('options');
+          if (panel) {
+            var btns = panel.get('buttons');
+            if (btns) {
+              var toRemove = btns.filter(function(b) {
+                var cls = b.get('className') || '';
+                return cls.indexOf('fa-code') > -1;
+              });
+              toRemove.forEach(function(b) { btns.remove(b); });
+            }
+          }
+          // Remover elemento DOM diretamente como fallback
+          setTimeout(function() {
+            document.querySelectorAll('.gjs-pn-options .fa-code, .gjs-pn-options button[title="View code"]')
+              .forEach(function(el) { el.style.setProperty('display','none','important'); });
+          }, 200);
+        }
+        doRemove();
+        editor.on('load', doRemove);
+      }());
+
     editor.on('load', async () => {
       // Load pages and components
       await loadPage(currentSlug);
@@ -3463,118 +3945,88 @@
       updateUI();
 
       // ── Logo: injeta no painel devices-c (esquerda nativa do GrapesJS) ────
+      var _doInjectLogo;
       (function injectToolbarLogo() {
+
+        // CSS global: ocultar label Device e alinhar toolbar
+        if (!document.getElementById('cms-hide-device-label-style')) {
+          var st = document.createElement('style');
+          st.id = 'cms-hide-device-label-style';
+          st.textContent = [
+            // Ocultar label "Device"
+            '.gjs-devices-c .gjs-device-label { display:none !important; }',
+            '.gjs-devices-c > span { display:none !important; }',
+            '.gjs-devices-c label { display:none !important; }',
+            '.gjs-select-label { display:none !important; }',
+            // O panelWrapper (pn-panel) DEVE ter display:flex para layout horizontal
+            // MAS sem !important, para que gjs-hidden possa sobrescrever com display:none
+            '[class*="pn-panel"][class*="devices-c"] { display:flex; align-items:center; height:40px; max-height:40px; padding:0; overflow:hidden; }',
+            // Quando oculto pelo GrapesJS no preview:
+            '[class*="pn-panel"][class*="devices-c"].gjs-hidden { display:none; }',
+          ].join('\n');
+          document.head.appendChild(st);
+        }
+
         function doInject() {
-          var devPanel = document.querySelector('.gjs-pn-devices-c');
-          if (!devPanel) { setTimeout(doInject, 100); return; }
+          _doInjectLogo = doInject;
 
-          // ── Forçar inline styles no painel via JS (CSS não tem especificidade) ──
-          devPanel.style.cssText = [
-            'display:flex !important',
-            'align-items:center !important',
-            'height:40px !important',
-            'max-height:40px !important',
-            'overflow:hidden !important',
-            'padding:0 !important',
-            'gap:0 !important',
-          ].join(';');
+          // Usar a API do GrapesJS — mais confiável que selectors
+          var panelModel = editor.Panels.getPanel('devices-c');
+          var panelWrapper = panelModel && panelModel.view && panelModel.view.el;
 
-          // ── Ocultar label "Device" — cobre todas as estruturas do GrapesJS ──
-          function hideDeviceLabel() {
-            // 1. Text nodes diretos no devPanel
-            devPanel.childNodes.forEach(function(node) {
-              if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
-                node.textContent = '';
-              }
-            });
-            // 2. Qualquer elemento que contenha SOMENTE o texto "Device"
-            devPanel.querySelectorAll('*').forEach(function(el) {
-              if (el.children.length === 0 && el.textContent.trim() === 'Device') {
-                el.style.setProperty('display', 'none', 'important');
-              }
-            });
-            // 3. Seletores específicos do GrapesJS
-            [
-              '.gjs-select-label',
-              '.gjs-devices-c > span',
-              '.gjs-pn-devices-c > span',
-              '.gjs-devices-c label',
-            ].forEach(function(sel) {
-              devPanel.querySelectorAll(sel).forEach(function(el) {
-                el.style.setProperty('display', 'none', 'important');
-              });
-            });
-          }
-          hideDeviceLabel();
-
-          // ── Estilizar o select de device ─────────────────────────────────────
-          var sel = devPanel.querySelector('select');
-          if (sel) {
-            sel.style.cssText = [
-              'background:#2a2a3e',
-              'color:#ccc',
-              'border:1px solid #444',
-              'border-radius:4px',
-              'padding:2px 6px',
-              'font-size:12px',
-              'height:26px',
-              'cursor:pointer',
-              'outline:none',
-            ].join(';');
+          // Fallback: .gjs-devices-c pai
+          if (!panelWrapper) {
+            var devEl = document.querySelector('.gjs-devices-c');
+            panelWrapper = devEl ? devEl.parentElement : null;
           }
 
-          // ── Injetar logo ──────────────────────────────────────────────────────
+          if (!panelWrapper) { setTimeout(doInject, 100); return; }
+
+          // NÃO setar display via inline style — deixar o CSS cuidar disso
+          // para não bloquear o gjs-hidden do preview
+          panelWrapper.style.alignItems = 'center';
+          panelWrapper.style.overflow = 'hidden';
+
+          // Estilizar select de device
+          var sel = panelWrapper.querySelector('select');
+          if (sel && !sel.style.background) {
+            sel.style.cssText = 'background:#2a2a3e;color:#ccc;border:1px solid #444;border-radius:4px;padding:2px 6px;font-size:12px;height:26px;cursor:pointer;outline:none;';
+          }
+
+          // Injetar logo somente se ainda não existir
           if (!document.getElementById('cms-toolbar-logo')) {
             var logo = document.createElement('div');
             logo.id = 'cms-toolbar-logo';
-            logo.style.cssText = [
-              'display:flex',
-              'align-items:center',
-              'padding:0 10px 0 6px',
-              'flex-shrink:0',
-              'height:40px',
-              'overflow:hidden',
-              'border-right:1px solid rgba(255,255,255,0.12)',
-              'margin-right:8px',
-            ].join(';');
+            // Padding reduzido para alinhar com o restante da toolbar
+            logo.style.cssText = 'display:flex;align-items:center;padding:0 8px;flex-shrink:0;height:40px;overflow:hidden;border-right:1px solid rgba(255,255,255,0.12);margin-right:4px;';
             var img = document.createElement('img');
             img.src = '/VisualCMS360header.png';
             img.alt = 'Visual CMS 360°';
             img.draggable = false;
-            img.style.cssText = 'height:24px;width:auto;display:block;user-select:none;';
+            img.style.cssText = 'height:22px;width:auto;display:block;user-select:none;';
             logo.appendChild(img);
-            devPanel.prepend(logo);
-            // Anexa o listener de click após injeção no DOM
+            panelWrapper.prepend(logo);
             setTimeout(cmsAttachLogoClick, 100);
           }
 
-          // ── Injetar regra CSS global via <style> para garantir ocultamento ──
-          if (!document.getElementById('cms-hide-device-label-style')) {
-            var st = document.createElement('style');
-            st.id = 'cms-hide-device-label-style';
-            st.textContent = [
-              '.gjs-devices-c > span { display:none !important; }',
-              '.gjs-pn-devices-c > span { display:none !important; }',
-              '.gjs-select-label { display:none !important; }',
-              '.gjs-devices-c label { display:none !important; }',
-            ].join('\n');
-            document.head.appendChild(st);
+          // MutationObserver: reinjetar se o GrapesJS remover o logo
+          if (!panelWrapper._cmsLogoObserving) {
+            panelWrapper._cmsLogoObserving = true;
+            var obs = new MutationObserver(function() {
+              if (!document.getElementById('cms-toolbar-logo')) {
+                doInject();
+              }
+            });
+            obs.observe(panelWrapper, { childList: true });
           }
-
-          // ── MutationObserver — reaplica se o GrapesJS re-renderizar ──────────
-          var observer = new MutationObserver(function() {
-            hideDeviceLabel();
-            var s = devPanel.querySelector('select');
-            if (s && !s.style.background) {
-              s.style.cssText = 'background:#2a2a3e;color:#ccc;border:1px solid #444;border-radius:4px;padding:2px 6px;font-size:12px;height:26px;cursor:pointer;outline:none;';
-            }
-          });
-          // Observar também o pai para pegar re-renders do GrapesJS no nível acima
-          var observeTarget = devPanel.parentNode || devPanel;
-          observer.observe(observeTarget, { childList: true, subtree: true, characterData: true });
         }
+
         doInject();
       })();
+
+
+
+
 
       // ── Fechar e reordenar categorias do Open Blocks ─────────────────────
       // Fecha todas as categorias assim que qualquer bloco é adicionado
@@ -3665,7 +4117,7 @@
 
           // Virar a seta
           var svg = toggleBtn.querySelector('svg');
-          if (svg) svg.style.transform = collapsed ? 'scaleX(-1)' : 'scaleX(1)';
+          if (svg) svg.style.transform = collapsed ? 'scaleX(1)' : 'scaleX(-1)';
 
           // Forçar o GrapesJS a recalcular dimensões do canvas
           setTimeout(function() { try { editor.refresh(); } catch(e) {} }, 320);
@@ -3675,8 +4127,363 @@
 
         // Aguardar GrapesJS renderizar completamente antes de configurar o drawer
         setTimeout(function() { setCollapsed(false); }, 600);
+
       })();
 
+      // ── Preview e Fullscreen ──────────────────────────────────────────────────
+      (function() {
+        var PANEL_W = 320;
+        var GJS_CONTAINER = '#gjs';
+
+        // ── PREVIEW ────────────────────────────────────────────────────────────
+        // O GrapesJS oculta TODOS os painéis via panel.set('visible',false),
+        // incluindo o devices-c que contém o logo.
+        // Só precisamos ocultar o toggle button — o resto o GrapesJS já faz.
+        editor.on('command:run:preview', function() {
+          var tb = document.getElementById('cms-drawer-toggle');
+          if (tb) tb.style.setProperty('display', 'none', 'important');
+        });
+        editor.on('command:stop:preview', function() {
+          var tb = document.getElementById('cms-drawer-toggle');
+          if (tb) tb.style.removeProperty('display');
+          // GrapesJS re-renderiza o painel ao sair do preview, removendo o logo
+          setTimeout(function() {
+            if (!document.getElementById('cms-toolbar-logo') && _doInjectLogo) {
+              _doInjectLogo();
+            }
+          }, 80);
+        });
+
+        // ── FULLSCREEN ─────────────────────────────────────────────────────────
+        // O browser entra em fullscreen nativo no container #gjs.
+        // Elementos position:fixed fora de #gjs ficam invisíveis no fullscreen.
+        // Solução: mover o toggleBtn para DENTRO de #gjs durante o fullscreen.
+        editor.on('command:run:fullscreen', function() {
+          function onFsEnter() {
+            document.removeEventListener('fullscreenchange', onFsEnter);
+            document.removeEventListener('webkitfullscreenchange', onFsEnter);
+            var tb  = document.getElementById('cms-drawer-toggle');
+            var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+            if (!tb || !fsEl) return;
+            if (!tb._origParent) {
+              tb._origParent = tb.parentNode;
+              tb._origNextSibling = tb.nextSibling;
+            }
+            fsEl.appendChild(tb);
+            var views = fsEl.querySelector('.gjs-pn-views');
+            var panelOpen = !views || views.style.right !== (-PANEL_W) + 'px';
+            tb.style.right = panelOpen ? PANEL_W + 'px' : '0px';
+            tb.style.removeProperty('display');
+          }
+          document.addEventListener('fullscreenchange', onFsEnter);
+          document.addEventListener('webkitfullscreenchange', onFsEnter);
+        });
+        editor.on('command:stop:fullscreen', function() {
+          function onFsExit() {
+            document.removeEventListener('fullscreenchange', onFsExit);
+            document.removeEventListener('webkitfullscreenchange', onFsExit);
+            var tb = document.getElementById('cms-drawer-toggle');
+            if (!tb || !tb._origParent) return;
+            if (tb._origNextSibling) {
+              tb._origParent.insertBefore(tb, tb._origNextSibling);
+            } else {
+              tb._origParent.appendChild(tb);
+            }
+            tb._origParent = null;
+            tb._origNextSibling = null;
+          }
+          document.addEventListener('fullscreenchange', onFsExit);
+          document.addEventListener('webkitfullscreenchange', onFsExit);
+        });
+      }());
+
+
+      // ── Editar classe (renomear + CSS) no Style Manager ──────────────────
+      (function initClassRename() {
+
+        if (!document.getElementById('cms-cls-style')) {
+          var rs = document.createElement('style');
+          rs.id = 'cms-cls-style';
+          rs.textContent = `
+            .cms-clm-edit { display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;margin-left:3px;cursor:pointer;opacity:0.5;flex-shrink:0;transition:opacity .15s; }
+            .cms-clm-edit:hover { opacity:1; }
+            .cms-clm-edit svg { fill:currentColor;display:block; }
+            #cms-cls-modal { display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.62);backdrop-filter:blur(4px);align-items:center;justify-content:center; }
+            #cms-cls-modal.open { display:flex; }
+            #cms-cls-dialog { background:#1a1b2e;border-radius:12px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 24px 64px rgba(0,0,0,0.7);padding:24px;width:520px;max-width:94vw;font-family:system-ui,sans-serif;color:#e2e4ef;animation:clsIn .18s ease; }
+            @keyframes clsIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
+            #cms-cls-dialog h4 { margin:0 0 16px;font-size:14px;font-weight:700;color:#9cdcfe;display:flex;align-items:center;gap:8px; }
+            .cms-cls-row { margin-bottom:12px; }
+            .cms-cls-label { display:block;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px; }
+            #cms-cls-name-input { width:100%;box-sizing:border-box;background:#0d0d1a;color:#9cdcfe;border:1px solid #334155;border-radius:6px;padding:8px 12px;font-size:13px;font-family:monospace;outline:none; }
+            #cms-cls-name-input:focus { border-color:#3b82f6; }
+            #cms-cls-css-input { width:100%;box-sizing:border-box;min-height:140px;background:#0d0d1a;color:#d4d4d4;border:1px solid #334155;border-radius:6px;padding:10px 12px;font-size:12px;font-family:monospace;line-height:1.7;outline:none;resize:vertical; }
+            #cms-cls-css-input:focus { border-color:#d7ba7d; }
+            .cms-cls-hint { font-size:10px;color:#4b5563;margin-top:4px; }
+            .cms-cls-btns { display:flex;gap:8px;justify-content:flex-end;margin-top:16px; }
+            .cms-cls-btns button { padding:8px 20px;border-radius:6px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s; }
+            #cms-cls-cancel { background:rgba(255,255,255,0.07);color:#9ca3af; }
+            #cms-cls-cancel:hover { background:rgba(255,255,255,0.13); }
+            #cms-cls-ok { background:#3b82f6;color:#fff; }
+            #cms-cls-ok:hover { background:#2563eb; }
+            #cms-cls-name-input[readonly] { opacity:0.55; cursor:default; }
+            #cms-cls-tw-badge { display:none; }
+
+          `;
+          document.head.appendChild(rs);
+        }
+
+        if (!document.getElementById('cms-cls-modal')) {
+          var modal = document.createElement('div');
+          modal.id = 'cms-cls-modal';
+          modal.innerHTML = `
+            <div id="cms-cls-dialog">
+              <h4>✏️ Editar Classe</h4>
+              <div class="cms-cls-row" id="cms-cls-name-row">
+                <span class="cms-cls-label">Nome da classe <span id="cms-cls-tw-badge" style="display:none;margin-left:6px;background:#0f3460;color:#38bdf8;font-size:9px;padding:1px 6px;border-radius:3px;font-weight:700;letter-spacing:.04em;vertical-align:middle;">TAILWIND</span></span>
+                <input id="cms-cls-name-input" type="text" autocomplete="off" spellcheck="false" placeholder="nome-da-classe" />
+                <div class="cms-cls-hint">Tailwind: nome somente leitura. Classes custom: renomeie livremente.</div>
+              </div>
+              <div class="cms-cls-row">
+                <span class="cms-cls-label">Propriedades CSS</span>
+                <textarea id="cms-cls-css-input" spellcheck="false" placeholder="color: red;\nfont-size: 16px;"></textarea>
+                <div class="cms-cls-hint" id="cms-cls-css-hint">Escreva as propriedades (sem seletor, sem chaves). Ctrl+Enter aplica.</div>
+              </div>
+              <div class="cms-cls-btns">
+                <button id="cms-cls-cancel">Cancelar</button>
+                <button id="cms-cls-ok">✓ Aplicar</button>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+          document.getElementById('cms-cls-cancel').onclick = function() { modal.classList.remove('open'); };
+          modal.addEventListener('click', function(e) { if (e.target === modal) modal.classList.remove('open'); });
+          document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && modal.classList.contains('open')) modal.classList.remove('open'); });
+        }
+
+        var pencilSVG = '<svg width="10" height="10" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+
+        // Extrair propriedades CSS de uma classe do CSS atual
+
+        // Prefixos/padrões de classes Tailwind conhecidas
+        var TAILWIND_PATTERNS = [
+          /^(m|p)[trblxy]?-/, /^(w|h)-/, /^(min|max)-(w|h)-/,
+          /^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl|left|center|right|justify|gray|red|blue|green|yellow|indigo|purple|pink|white|black)/,
+          /^(font)-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black|sans|serif|mono)/,
+          /^(bg|border|ring|shadow|outline)(-|$)/, /^(flex|grid|block|inline|hidden|table)(-|$)/,
+          /^(items|justify|self|content|place)(-|$)/, /^(gap|space)(-|$)/,
+          /^(rounded|overflow|opacity|cursor|pointer|select|resize)(-|$)/,
+          /^(absolute|relative|fixed|sticky|static)$/, /^(top|right|bottom|left|inset)(-|$)/,
+          /^(z|order)(-|$)/, /^(col|row)(-|$)/, /^(transition|duration|ease|delay|animate)(-|$)/,
+          /^(scale|rotate|translate|skew|origin)(-|$)/, /^(sr-only|not-sr-only)$/,
+          /^(leading|tracking|whitespace|break|truncate|line-clamp)(-|$)/,
+          /^(list|decoration|underline|italic|uppercase|lowercase|capitalize|normal-case)(-|$)/,
+          /^(border-(t|r|b|l|x|y|0|2|4|8|solid|dashed|dotted|double|none))$/,
+          /^(divide|ring|shadow)(-|$)/, /^(container|prose|aspect)(-|$)/,
+          /^(sm:|md:|lg:|xl:|2xl:|hover:|focus:|active:|disabled:|dark:)/,
+          /^(p|m)\d/, /^(w|h)\d/, /^(text|bg|border)-\[/
+        ];
+        function isTailwindClass(cls) {
+          return TAILWIND_PATTERNS.some(function(rx) { return rx.test(cls); });
+        }
+
+        // Tentar ler o CSS computado da classe do canvas do GrapesJS
+        function getComputedClassCss(className) {
+          try {
+            var iframe = document.querySelector('.gjs-frame');
+            if (!iframe) return null;
+            var doc = iframe.contentDocument || iframe.contentWindow.document;
+            // Criar elemento temporário com a classe para obter o computado
+            var tmp = doc.createElement('div');
+            tmp.className = className;
+            tmp.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;';
+            doc.body.appendChild(tmp);
+            var computed = iframe.contentWindow.getComputedStyle(tmp);
+            // Coletar propriedades não-default relevantes
+            var props = [
+              'color','background-color','background','font-size','font-weight','font-family',
+              'line-height','letter-spacing','text-align','text-decoration','text-transform',
+              'padding','padding-top','padding-right','padding-bottom','padding-left',
+              'margin','margin-top','margin-right','margin-bottom','margin-left',
+              'width','height','min-width','min-height','max-width','max-height',
+              'display','flex-direction','align-items','justify-content','flex-wrap','gap',
+              'grid-template-columns','grid-template-rows',
+              'border','border-radius','border-color','border-width','border-style',
+              'box-shadow','opacity','overflow','position','top','right','bottom','left',
+              'z-index','cursor','transition','transform'
+            ];
+            var lines = [];
+            props.forEach(function(p) {
+              var val = computed.getPropertyValue(p);
+              if (val && val !== '' && val !== 'none' && val !== 'normal' && val !== 'auto'
+                  && val !== '0px' && val !== 'rgba(0, 0, 0, 0)' && val !== 'rgb(0, 0, 0)'
+                  && val !== 'static' && val !== 'visible' && val !== '1') {
+                // Skip shorthand if already individual values collected
+                if ((p === 'padding' || p === 'margin') && lines.some(function(l){ return l.startsWith(p+'-'); })) return;
+                lines.push(p + ': ' + val + ';');
+              }
+            });
+            doc.body.removeChild(tmp);
+            return lines.length ? lines.join('\n') : null;
+          } catch(e) { return null; }
+        }
+
+        // Extrair propriedades CSS de uma classe do CSS gerenciado pelo GrapesJS
+        function getClassCssBody(className) {
+          var css = editor.getCss() || '';
+          var escaped = className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          var rx = new RegExp('[^}]*\\.\\s*' + escaped + '\\s*\\{([^}]*)\\}', 'i');
+          var m = css.match(rx);
+          if (!m) return '';
+          return m[1].replace(/;\s*/g, ';\n').replace(/^\s+|\s+$/gm, '').trim();
+        }
+
+        // Substituir/inserir regra CSS de uma classe no GrapesJS
+        function setClassCssBody(className, newBody) {
+          var css = editor.getCss() || '';
+          var escaped = className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          var rx = new RegExp('[^{]*\\.\\s*' + escaped + '\\s*\\{[^}]*\\}', 'gi');
+          var newRule = '.' + className + ' { ' + newBody.trim().replace(/\n/g, ' ') + ' }';
+          if (rx.test(css)) {
+            css = css.replace(rx, newRule);
+          } else {
+            css = css + '\n' + newRule;
+          }
+          editor.setStyle(css);
+        }
+
+        function injectEditButtons() {
+          document.querySelectorAll('.gjs-clm-tag').forEach(function(tag) {
+            if (tag.querySelector('.cms-clm-edit')) return;
+            var closeBtn = tag.querySelector('.gjs-clm-tag-close');
+            if (!closeBtn) return;
+
+            var editBtn = document.createElement('span');
+            editBtn.className = 'cms-clm-edit';
+            editBtn.title = 'Editar classe (CSS + renomear)';
+            editBtn.innerHTML = pencilSVG;
+
+            editBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+
+              // Obter nome atual da classe
+              var tagText = '';
+              tag.childNodes.forEach(function(n) { if (n.nodeType === 3 && n.textContent.trim()) tagText = n.textContent.trim(); });
+              if (!tagText) {
+                var st = tag.querySelector('.gjs-clm-tag-status');
+                tagText = st ? tag.textContent.replace(st.textContent, '').trim() : tag.textContent.trim();
+              }
+
+              tagText = tagText.replace(/^\./, '').trim();
+
+              var isTW   = isTailwindClass(tagText);
+              var modal   = document.getElementById('cms-cls-modal');
+              var nameInp = document.getElementById('cms-cls-name-input');
+              var cssInp  = document.getElementById('cms-cls-css-input');
+              var hintEl  = document.getElementById('cms-cls-css-hint');
+              var badgeEl = document.getElementById('cms-cls-tw-badge');
+              var nameRow = document.getElementById('cms-cls-name-row');
+
+              // Classe Tailwind: nome não é editável (não faz sentido renomear)
+              // Classe custom: editável normalmente
+              nameInp.value    = tagText;
+              nameInp.readOnly = isTW;
+              nameInp.style.color    = isTW ? '#6b7280' : '';
+              nameInp.style.cursor   = isTW ? 'default' : '';
+              nameInp.style.borderColor = isTW ? '#1f2937' : '';
+              if (badgeEl) badgeEl.style.display = isTW ? 'inline-flex' : 'none';
+
+              // Preencher CSS:
+              // - Custom: CSS do GrapesJS (o que foi salvo no editor)
+              // - Tailwind: CSS computado do canvas OU vazio (para criar override)
+              var existingCss = getClassCssBody(tagText);
+              if (existingCss) {
+                cssInp.value = existingCss;
+                if (hintEl) hintEl.textContent = isTW
+                  ? 'Override Tailwind ativo. Ctrl+Enter aplica. Limpe o campo para remover o override.'
+                  : 'Propriedades da classe. Ctrl+Enter aplica.';
+              } else if (isTW) {
+                // Tentar mostrar o CSS computado como referência (read-only comentado)
+                var computed = getComputedClassCss(tagText);
+                if (computed) {
+                  cssInp.value = '/* CSS Tailwind atual (leitura) — edite para criar override: */\n/*\n' + computed + '\n*/\n\n/* Seu override: */\n';
+                } else {
+                  cssInp.value = '/* Classe Tailwind: escreva propriedades para sobrescrever */\n';
+                }
+                if (hintEl) hintEl.textContent = 'Tailwind: escreva propriedades para criar override. Ctrl+Enter aplica.';
+              } else {
+                cssInp.value = '';
+                if (hintEl) hintEl.textContent = 'Classe custom sem CSS no editor. Escreva as propriedades. Ctrl+Enter aplica.';
+              }
+
+              modal.classList.add('open');
+              setTimeout(function() { cssInp.focus(); cssInp.setSelectionRange(cssInp.value.length, cssInp.value.length); }, 60);
+
+              function doApply() {
+                var newName = nameInp.value.trim().replace(/^\./, '');
+                var newCss  = cssInp.value.trim();
+                if (!newName) { modal.classList.remove('open'); return; }
+                modal.classList.remove('open');
+
+                // Para Tailwind: não renomear nunca; só aplicar override CSS
+                // Remover blocos de comentário antes de aplicar (o usuário pode ter deixado o placeholder)
+                var cssToApply = newCss
+                  .replace(/\/\*[\s\S]*?\*\//g, '')  // remover comentários /* ... */
+                  .trim();
+
+                // 1. Aplicar CSS
+                if (cssToApply !== '') {
+                  setClassCssBody(tagText, cssToApply);
+                }
+
+                // 2. Renomear — apenas se não for Tailwind e o nome mudou
+                var renamed = (!isTW && newName !== tagText);
+                if (renamed) {
+                  var sm = editor.SelectorManager;
+                  var sel = sm.get('.' + tagText);
+                  if (sel) { sel.set('name', newName); sel.set('label', newName); }
+                  var currentCss = editor.getCss() || '';
+                  var esc = tagText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                  editor.setStyle(currentCss.replace(new RegExp('\\.' + esc, 'g'), '.' + newName));
+                  editor.getSelectedAll().forEach(function(comp) {
+                    if (comp.getClasses().indexOf(tagText) > -1) {
+                      comp.removeClass(tagText);
+                      comp.addClass(newName);
+                    }
+                  });
+                }
+
+                try { editor.refresh(); } catch(err) {}
+              }
+
+              // Registrar handlers (sobrescrever anteriores)
+              document.getElementById('cms-cls-ok').onclick = doApply;
+              nameInp.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); cssInp.focus(); } };
+              // Remover handler anterior antes de adicionar novo
+              if (cssInp._applyHandler) cssInp.removeEventListener('keydown', cssInp._applyHandler);
+              cssInp._applyHandler = function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); doApply(); }
+              };
+              cssInp.addEventListener('keydown', cssInp._applyHandler);
+            });
+
+            tag.insertBefore(editBtn, closeBtn);
+          });
+        }
+
+        var clmObs = new MutationObserver(function() { injectEditButtons(); });
+        editor.on('load', function() {
+          setTimeout(function() {
+            var area = document.querySelector('.gjs-clm-tags, .gjs-pn-views-container');
+            if (area) clmObs.observe(area, { childList: true, subtree: true });
+            injectEditButtons();
+          }, 800);
+        });
+        editor.on('component:selected', function() { setTimeout(injectEditButtons, 100); });
+
+      }());
+
+      // ── Toolbar: ajuste
       // ── Toolbar: ajuste dinâmico do canvas top quando a toolbar quebra ─────
       (function watchToolbarHeight() {
         var commands = document.querySelector('.gjs-pn-commands');

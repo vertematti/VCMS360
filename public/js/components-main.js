@@ -1,3 +1,16 @@
+// Visual CMS 360° — Editor CMS local com suporte a tours virtuais 360°
+// Copyright (C) 2025  Gerson Luis Vertematti <gersonlv@gmail.com>
+//
+// Este programa é software livre: você pode redistribuí-lo e/ou modificá-lo
+// sob os termos da GNU General Public License conforme publicada pela Free
+// Software Foundation, na versão 3 da Licença, ou (a seu critério) qualquer
+// versão posterior.
+//
+// Este programa é distribuído na esperança de que seja útil, mas SEM QUALQUER
+// GARANTIA. Veja a GNU General Public License para mais detalhes.
+//
+// <https://www.gnu.org/licenses/gpl-3.0.html>
+
     // ── State ─────────────────────────────────────────────────────────────────
     let currentComponent = null;
     let componentList    = {};
@@ -301,9 +314,16 @@
 
     // ── Save component ─────────────────────────────────────────────────────────
     async function saveComponent(name) {
+      // Separar HTML limpo do JS para injeção correta nas páginas
+      const rawHtml = editor.getHtml();
+      const scriptMatches = [...rawHtml.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)];
+      const js   = scriptMatches.map(m => m[1].trim()).filter(Boolean).join('\n\n');
+      const html = rawHtml.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').trim();
+
       const payload = {
         name,
-        html:        editor.getHtml(),
+        html,
+        js,
         css:         editor.getCss(),
         projectData: editor.getProjectData()
       };
@@ -351,133 +371,115 @@
     }
 
     // ── Toolbar ────────────────────────────────────────────────────────────────
+
+      // ── Remover botão nativo "View Code" do GrapesJS ─────────────────────
+      (function removeViewCodeBtn() {
+        function doRemove() {
+          // Remover via Panels API
+          try { editor.Panels.removeButton('options', 'export-template'); } catch(e) {}
+          // Variável xf do GrapesJS mapeia para 'gjs-open-code' ou similar
+          // Remover qualquer botão do painel options com className fa-code
+          var panel = editor.Panels.getPanel('options');
+          if (panel) {
+            var btns = panel.get('buttons');
+            if (btns) {
+              var toRemove = btns.filter(function(b) {
+                var cls = b.get('className') || '';
+                return cls.indexOf('fa-code') > -1;
+              });
+              toRemove.forEach(function(b) { btns.remove(b); });
+            }
+          }
+          // Remover elemento DOM diretamente como fallback
+          setTimeout(function() {
+            document.querySelectorAll('.gjs-pn-options .fa-code, .gjs-pn-options button[title="View code"]')
+              .forEach(function(el) { el.style.setProperty('display','none','important'); });
+          }, 200);
+        }
+        doRemove();
+        editor.on('load', doRemove);
+      }());
+
     editor.on('load', async () => {
 
-      // ── Logo: injeta no painel devices-c (esquerda nativa do GrapesJS) ────
+      // ── Função para anexar click ao logo (abre painel Sobre) ──────────────
+      function cmsAttachLogoClick() {
+        var logo = document.getElementById('cms-toolbar-logo');
+        if (!logo || logo._cmsAboutBound) return;
+        logo._cmsAboutBound = true;
+        logo.style.cursor = 'pointer';
+        logo.title = 'Sobre o Visual CMS 360°';
+        logo.addEventListener('click', function() {
+          var panel = document.getElementById('cms-about-panel');
+          var isOpen = panel && panel.classList.contains('active');
+          if (isOpen) editor.stopCommand('cms-open-about-comp');
+          else editor.runCommand('cms-open-about-comp');
+        });
+      }
+
+      // ── Logo: injeta no painel devices-c ──────────────────────────────────
+      var _doInjectLogo;
       (function injectToolbarLogo() {
+
+        // CSS global: ocultar label Device
+        if (!document.getElementById('cms-hide-device-label-style')) {
+          var st = document.createElement('style');
+          st.id = 'cms-hide-device-label-style';
+          st.textContent = [
+            '.gjs-devices-c .gjs-device-label { display:none !important; }',
+            '.gjs-devices-c > span { display:none !important; }',
+            '.gjs-devices-c label { display:none !important; }',
+            '.gjs-select-label { display:none !important; }',
+            '[class*="pn-panel"][class*="devices-c"] { display:flex; align-items:center; height:40px; max-height:40px; padding:0; overflow:hidden; }',
+            '[class*="pn-panel"][class*="devices-c"].gjs-hidden { display:none; }',
+          ].join('\n');
+          document.head.appendChild(st);
+        }
+
         function doInject() {
-          var devPanel = document.querySelector('.gjs-pn-devices-c');
-          if (!devPanel) { setTimeout(doInject, 100); return; }
-
-          // ── Forçar inline styles no painel via JS (CSS não tem especificidade) ──
-          devPanel.style.cssText = [
-            'display:flex !important',
-            'align-items:center !important',
-            'height:40px !important',
-            'max-height:40px !important',
-            'overflow:hidden !important',
-            'padding:0 !important',
-            'gap:0 !important',
-          ].join(';');
-
-          // ── Ocultar label "Device" — cobre todas as estruturas do GrapesJS ──
-          function hideDeviceLabel() {
-            // 1. Text nodes diretos no devPanel
-            devPanel.childNodes.forEach(function(node) {
-              if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
-                node.textContent = '';
-              }
-            });
-            // 2. Qualquer elemento que contenha SOMENTE o texto "Device"
-            devPanel.querySelectorAll('*').forEach(function(el) {
-              if (el.children.length === 0 && el.textContent.trim() === 'Device') {
-                el.style.setProperty('display', 'none', 'important');
-              }
-            });
-            // 3. Seletores específicos do GrapesJS
-            [
-              '.gjs-select-label',
-              '.gjs-devices-c > span',
-              '.gjs-pn-devices-c > span',
-              '.gjs-devices-c label',
-            ].forEach(function(sel) {
-              devPanel.querySelectorAll(sel).forEach(function(el) {
-                el.style.setProperty('display', 'none', 'important');
-              });
-            });
+          _doInjectLogo = doInject;
+          var panelModel = editor.Panels.getPanel('devices-c');
+          var panelWrapper = panelModel && panelModel.view && panelModel.view.el;
+          if (!panelWrapper) {
+            var devEl = document.querySelector('.gjs-devices-c');
+            panelWrapper = devEl ? devEl.parentElement : null;
           }
-          hideDeviceLabel();
+          if (!panelWrapper) { setTimeout(doInject, 100); return; }
 
-          // ── Estilizar o select de device ─────────────────────────────────────
-          var sel = devPanel.querySelector('select');
-          if (sel) {
-            sel.style.cssText = [
-              'background:#2a2a3e',
-              'color:#ccc',
-              'border:1px solid #444',
-              'border-radius:4px',
-              'padding:2px 6px',
-              'font-size:12px',
-              'height:26px',
-              'cursor:pointer',
-              'outline:none',
-            ].join(';');
+          panelWrapper.style.alignItems = 'center';
+          panelWrapper.style.overflow = 'hidden';
+
+          var sel = panelWrapper.querySelector('select');
+          if (sel && !sel.style.background) {
+            sel.style.cssText = 'background:#2a2a3e;color:#ccc;border:1px solid #444;border-radius:4px;padding:2px 6px;font-size:12px;height:26px;cursor:pointer;outline:none;';
           }
 
-          // ── Injetar logo ──────────────────────────────────────────────────────
           if (!document.getElementById('cms-toolbar-logo')) {
             var logo = document.createElement('div');
             logo.id = 'cms-toolbar-logo';
-            logo.style.cssText = [
-              'display:flex',
-              'align-items:center',
-              'padding:0 10px 0 6px',
-              'flex-shrink:0',
-              'height:40px',
-              'overflow:hidden',
-              'border-right:1px solid rgba(255,255,255,0.12)',
-              'margin-right:8px',
-            ].join(';');
+            logo.style.cssText = 'display:flex;align-items:center;padding:0 8px;flex-shrink:0;height:40px;overflow:hidden;border-right:1px solid rgba(255,255,255,0.12);margin-right:4px;cursor:pointer;';
             var img = document.createElement('img');
             img.src = '/VisualCMS360header.png';
             img.alt = 'Visual CMS 360°';
             img.draggable = false;
-            img.style.cssText = 'height:24px;width:auto;display:block;user-select:none;';
+            img.style.cssText = 'height:22px;width:auto;display:block;user-select:none;';
             logo.appendChild(img);
-            devPanel.prepend(logo);
-            // Anexa o listener de click após injeção no DOM
-            setTimeout(function() {
-              var l = document.getElementById('cms-toolbar-logo');
-              if (!l || l._cmsAboutBound) return;
-              l._cmsAboutBound = true;
-              l.style.cursor = 'pointer';
-              l.title = 'Sobre o VisualCMS360°';
-              l.addEventListener('click', function() {
-                var panel = document.getElementById('cms-about-panel');
-                var isOpen = panel && panel.classList.contains('active');
-                if (isOpen) editor.stopCommand('cms-open-about-comp');
-                else editor.runCommand('cms-open-about-comp');
-              });
-            }, 100);
+            panelWrapper.prepend(logo);
+            setTimeout(cmsAttachLogoClick, 100);
           }
 
-          // ── Injetar regra CSS global via <style> para garantir ocultamento ──
-          if (!document.getElementById('cms-hide-device-label-style')) {
-            var st = document.createElement('style');
-            st.id = 'cms-hide-device-label-style';
-            st.textContent = [
-              '.gjs-devices-c > span { display:none !important; }',
-              '.gjs-pn-devices-c > span { display:none !important; }',
-              '.gjs-select-label { display:none !important; }',
-              '.gjs-devices-c label { display:none !important; }',
-            ].join('\n');
-            document.head.appendChild(st);
+          if (!panelWrapper._cmsLogoObserving) {
+            panelWrapper._cmsLogoObserving = true;
+            var obs = new MutationObserver(function() {
+              if (!document.getElementById('cms-toolbar-logo')) doInject();
+            });
+            obs.observe(panelWrapper, { childList: true });
           }
-
-          // ── MutationObserver — reaplica se o GrapesJS re-renderizar ──────────
-          var observer = new MutationObserver(function() {
-            hideDeviceLabel();
-            var s = devPanel.querySelector('select');
-            if (s && !s.style.background) {
-              s.style.cssText = 'background:#2a2a3e;color:#ccc;border:1px solid #444;border-radius:4px;padding:2px 6px;font-size:12px;height:26px;cursor:pointer;outline:none;';
-            }
-          });
-          // Observar também o pai para pegar re-renders do GrapesJS no nível acima
-          var observeTarget = devPanel.parentNode || devPanel;
-          observer.observe(observeTarget, { childList: true, subtree: true, characterData: true });
         }
+
         doInject();
       })();
+
 
       // Voltar ao editor de páginas
       editor.Panels.addButton('options', [{
@@ -491,10 +493,8 @@
       // Importar / Editar código
       editor.Panels.addButton('views', [{
         id: 'import-code-comp',
-        label: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-          <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
-          <path d="M12 17l1.5-1.5L11 13h8v-2h-8l2.5-2.5L12 7l-5 5 5 5z" opacity=".6"/>
-        </svg>`,
+        label: '',
+        className: 'gjs-pn-btn fa fa-code',
         command: 'import-code-comp',
         attributes: { title: 'Importar / Editar HTML & CSS do componente' },
         active: false,
@@ -503,7 +503,7 @@
       // ── Botão Sobre (painel lateral) ───────────────────────────────────────
       editor.Panels.addButton('views', [{
         id: 'cms-about-comp',
-        label: `<span style="font-size:11px;font-weight:600;letter-spacing:0.03em;padding:0 4px;">Sobre</span>`,
+        label: `<span style="font-size:13px;font-weight:700;letter-spacing:0.03em;padding:0 4px;">Sobre</span>`,
         command: 'cms-open-about-comp',
         attributes: { title: 'Sobre o VisualCMS360°' },
         active: false,
@@ -550,9 +550,10 @@
               gap: 5px 12px;
               font-size: 12.5px;
               line-height: 1.6;
+              text-align: left;
             }
-            .cms-about-label { color: #6b7280; white-space: nowrap; }
-            .cms-about-value { color: #e2e4ef; }
+            .cms-about-label { color: #6b7280; white-space: nowrap; text-align: left; }
+            .cms-about-value { color: #e2e4ef; text-align: left; }
             .cms-about-link { color: #60a5fa; }
             .cms-about-lic-row {
               display: flex;
@@ -602,7 +603,10 @@
             </div>
 
             <div class="cms-about-section">
-              <h3 style="color:#60a5fa;">👤 Autor</h3>
+              <div style="text-align:center;margin-bottom:8px;">
+                <img src="/glv.png" alt="Gerson Luis Vertematti" style="height:40px;width:40px;border-radius:50%;object-fit:cover;opacity:0.95;">
+              </div>
+              <h3 style="color:#60a5fa;text-align:center;">Autor</h3>
               <div class="cms-about-grid">
                 <span class="cms-about-label">Nome</span>
                 <span class="cms-about-value" style="font-weight:600;">Gerson Luis Vertematti</span>
@@ -620,12 +624,15 @@
             <hr class="cms-about-divider">
 
             <div class="cms-about-section">
-              <h3 style="color:#34d399;">🌟 Open Maker</h3>
+              <div style="text-align:center;margin-bottom:8px;">
+                <img src="/openmaker.png" alt="Open Maker" style="height:40px;width:auto;opacity:0.92;">
+              </div>
+              <h3 style="color:#34d399;text-align:center;">Open Maker</h3>
               <p style="margin:0;font-size:12.5px;line-height:1.7;color:#c9cce0;">
                 Gerson é <strong style="color:#34d399;">Educador Maker voluntário</strong> do
                 <a style="color:#34d399;" href="https://www.dispensados.com.br" target="_blank">Open Maker</a>,
                 iniciativa dedicada à educação criativa e cultura maker.
-                O VisualCMS360° nasceu desse espírito: uma ferramenta aberta e acessível para criadores de conteúdo.
+                O Visual CMS 360° nasceu desse espírito: uma ferramenta aberta e acessível para criadores de conteúdo.
               </p>
             </div>
 
@@ -634,7 +641,7 @@
             <div class="cms-about-section">
               <h3 style="color:#f59e0b;">📄 Licenças</h3>
               <div>
-                <div class="cms-about-lic-row"><span style="color:#e2e4ef;font-weight:600;">VisualCMS360°</span><span class="cms-about-badge">MIT</span></div>
+                <div class="cms-about-lic-row"><span style="color:#e2e4ef;font-weight:600;">Visual CMS 360°</span><span class="cms-about-badge">GPL v3</span></div>
                 <div class="cms-about-lic-row"><span style="color:#9ca3af;">Astro / @astrojs/node</span><span class="cms-about-badge-sec">MIT</span></div>
                 <div class="cms-about-lic-row"><span style="color:#9ca3af;">GrapesJS</span><span class="cms-about-badge-sec">BSD-3-Clause</span></div>
                 <div class="cms-about-lic-row"><span style="color:#9ca3af;">grapesjs-blocks-basic</span><span class="cms-about-badge-sec">BSD-3-Clause</span></div>
@@ -670,7 +677,6 @@
         run(ed, sender) {
           sender && sender.set('active', 0);
 
-          /* Extrair JS existente do HTML atual (tags <script>...</script>) */
           function extractScripts(html) {
             const matches = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)];
             return matches.map(m => m[1].trim()).filter(Boolean).join('\n\n');
@@ -679,33 +685,139 @@
             return html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').trim();
           }
 
-          const currentHtml = ed.getHtml();
+          // ── Syntax highlighters ────────────────────────────────────────────
+          function highlightHTML(code) {
+            return code
+              .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+              .replace(/(&quot;[^&]*&quot;|'[^']*')/g,'<span style="color:#ce9178">$1</span>')
+              .replace(/(&lt;\/?)([\w-]+)/g,'$1<span style="color:#4ec9b0">$2</span>')
+              .replace(/\s([\w:-]+)=/g,' <span style="color:#9cdcfe">$1</span>=')
+              .replace(/(&lt;!--[\s\S]*?--&gt;)/g,'<span style="color:#6a9955">$1</span>');
+          }
+          function highlightCSS(code) {
+            return code
+              .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+              .replace(/(\/\*[\s\S]*?\*\/)/g,'<span style="color:#6a9955">$1</span>')
+              .replace(/^([^{}\n]+)\{/gm,'<span style="color:#d7ba7d">$1</span>{')
+              .replace(/^\s+([\w-]+):/gm,(m,p)=>`  <span style="color:#9cdcfe">${p}</span>:`)
+              .replace(/:\s*([^;{\n]+)/g,(m,v)=>`: <span style="color:#ce9178">${v}</span>`);
+          }
+          function highlightJS(code) {
+            return code
+              .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+              .replace(/(\/\/[^\n]*)/g,'<span style="color:#6a9955">$1</span>')
+              .replace(/(\/\*[\s\S]*?\*\/)/g,'<span style="color:#6a9955">$1</span>')
+              .replace(/\b(var|let|const|function|return|if|else|for|while|do|new|this|class|import|export|from|async|await|try|catch|finally|typeof|instanceof|null|undefined|true|false)\b/g,'<span style="color:#c586c0">$1</span>')
+              .replace(/(['"``])(.*?)\1/g,'<span style="color:#ce9178">$1$2$1</span>');
+          }
+
+          // ── Editor sintático ───────────────────────────────────────────────
+          function makeEditor(id, lang, placeholder='') {
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'position:relative;border:1px solid #444;border-radius:4px;background:#0d0d1a;overflow:hidden;flex:1;min-height:80px;';
+            const nums = document.createElement('div');
+            nums.style.cssText = 'position:absolute;top:0;left:0;width:34px;padding:12px 0;text-align:right;color:#555;font:12px/1.6 monospace;user-select:none;background:#080810;border-right:1px solid #333;overflow:hidden;box-sizing:border-box;';
+            const hi = document.createElement('div');
+            hi.style.cssText = 'position:absolute;inset:0;left:38px;padding:12px;font:12px/1.6 monospace;white-space:pre;pointer-events:none;overflow:hidden;word-break:break-all;color:#d4d4d4;';
+            const ta = document.createElement('textarea');
+            ta.id = id; ta.placeholder = placeholder; ta.spellcheck = false;
+            ta.style.cssText = 'position:relative;left:38px;width:calc(100% - 38px);height:100%;background:transparent;color:transparent;caret-color:#fff;padding:12px;border:none;outline:none;font:12px/1.6 monospace;resize:none;box-sizing:border-box;white-space:pre;overflow-x:auto;';
+            function renderHighlight() {
+              const val = ta.value;
+              nums.innerHTML = val.split('\n').map((_,i)=>`<div style="padding:0 6px">${i+1}</div>`).join('');
+              let h; if (lang==='html') h=highlightHTML(val); else if (lang==='css') h=highlightCSS(val); else h=highlightJS(val);
+              hi.innerHTML = h + '\n';
+              hi.scrollTop = ta.scrollTop; hi.scrollLeft = ta.scrollLeft;
+            }
+            ta.addEventListener('input', renderHighlight);
+            ta.addEventListener('scroll', ()=>{ hi.scrollTop=ta.scrollTop; hi.scrollLeft=ta.scrollLeft; nums.scrollTop=ta.scrollTop; });
+            ta.addEventListener('keydown', e=>{ if(e.key==='Tab'){e.preventDefault();const s=ta.selectionStart;ta.value=ta.value.slice(0,s)+'  '+ta.value.slice(ta.selectionEnd);ta.selectionStart=ta.selectionEnd=s+2;renderHighlight();} });
+            wrap.appendChild(nums); wrap.appendChild(hi); wrap.appendChild(ta);
+            wrap._ta = ta; wrap._render = renderHighlight;
+            return wrap;
+          }
+
+          // ── Estilos do modal ───────────────────────────────────────────────
+          if (!document.getElementById('imp-comp-modal-styles')) {
+            const s = document.createElement('style');
+            s.id = 'imp-comp-modal-styles';
+            s.textContent = `
+              #imp-comp-wrap { display:flex;flex-direction:column;height:calc(94vh - 56px);padding:10px;gap:6px;overflow:hidden; }
+              .imp-comp-section { display:flex;flex-direction:column;gap:4px;min-height:0; }
+              .imp-comp-section.collapsed .imp-comp-ew { display:none!important; }
+              .imp-comp-hdr { display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;padding:4px 8px;border-radius:4px;background:rgba(255,255,255,0.05);color:#ccc;font-size:12px;font-weight:600; }
+              .imp-comp-hdr:hover { background:rgba(255,255,255,0.09); }
+              .imp-comp-arrow { font-size:10px;transition:transform .2s; }
+              .imp-comp-section.collapsed .imp-comp-arrow { transform:rotate(-90deg); }
+              .imp-comp-badge { margin-left:auto;font-size:10px;color:#666;font-weight:400; }
+              .imp-comp-ew { flex:1;display:flex;min-height:0; }
+              .imp-comp-section:not(.collapsed) { flex:1; }
+              #imp-comp-apply { background:#3b82f6;color:#fff;border:none;border-radius:4px;padding:8px 20px;cursor:pointer;font-size:13px;font-weight:600;margin-top:4px;align-self:flex-end;flex-shrink:0; }
+              #imp-comp-apply:hover { background:#2563eb; }
+            `;
+            document.head.appendChild(s);
+          }
 
           const wrap = document.createElement('div');
-          wrap.style.padding = '10px';
-          wrap.innerHTML = `
-            <div style="margin-bottom:5px;color:#ccc;font-size:12px;font-weight:600;">HTML</div>
-            <textarea id="comp-imp-html" style="width:100%;height:150px;background:#0d0d1a;color:#d4d4d4;padding:10px;border:1px solid #444;margin-bottom:12px;box-sizing:border-box;font-family:monospace;font-size:12px;line-height:1.6;border-radius:4px;resize:vertical;"></textarea>
-            <div style="margin-bottom:5px;color:#ccc;font-size:12px;font-weight:600;">CSS</div>
-            <textarea id="comp-imp-css" style="width:100%;height:110px;background:#0d0d1a;color:#d4d4d4;padding:10px;border:1px solid #444;margin-bottom:12px;box-sizing:border-box;font-family:monospace;font-size:12px;line-height:1.6;border-radius:4px;resize:vertical;"></textarea>
-            <div style="margin-bottom:5px;color:#ccc;font-size:12px;font-weight:600;">JavaScript</div>
-            <textarea id="comp-imp-js" style="width:100%;height:110px;background:#0d0d1a;color:#d4d4d4;padding:10px;border:1px solid #444;margin-bottom:15px;box-sizing:border-box;font-family:monospace;font-size:12px;line-height:1.6;border-radius:4px;resize:vertical;" placeholder="// Seu JavaScript aqui (sem as tags <script>)"></textarea>
-            <button id="comp-imp-apply" style="background:#3b82f6;color:#fff;border:none;border-radius:4px;padding:8px 20px;cursor:pointer;font-size:13px;">Aplicar</button>
-          `;
-          wrap.querySelector('#comp-imp-html').value = formatHTML(stripScripts(currentHtml));
-          wrap.querySelector('#comp-imp-css').value  = formatCSS(ed.getCss());
-          wrap.querySelector('#comp-imp-js').value   = extractScripts(currentHtml);
-          wrap.querySelector('#comp-imp-apply').onclick = () => {
-            let html = wrap.querySelector('#comp-imp-html').value;
-            const js = wrap.querySelector('#comp-imp-js').value.trim();
+          wrap.id = 'imp-comp-wrap';
+
+          function makeSection(label, langTag, color, placeholder='') {
+            const sec = document.createElement('div');
+            sec.className = 'imp-comp-section';
+            const hdr = document.createElement('div');
+            hdr.className = 'imp-comp-hdr';
+            hdr.innerHTML = `<span class="imp-comp-arrow">▼</span> <span style="color:${color}">${label}</span> <span class="imp-comp-badge">${langTag}</span>`;
+            const ew = document.createElement('div');
+            ew.className = 'imp-comp-ew';
+            const ed2 = makeEditor(`comp-imp-${langTag}`, langTag, placeholder);
+            ed2.style.width = '100%';
+            ew.appendChild(ed2);
+            hdr.addEventListener('click', ()=> sec.classList.toggle('collapsed'));
+            sec.appendChild(hdr); sec.appendChild(ew);
+            sec._editor = ed2;
+            return sec;
+          }
+
+          const secHtml = makeSection('HTML', 'html', '#4ec9b0');
+          const secCss  = makeSection('CSS',  'css',  '#d7ba7d');
+          const secJs   = makeSection('JavaScript', 'js', '#c586c0', '// Seu JavaScript aqui (sem as tags <script>)');
+          secCss.classList.add('collapsed');
+          secJs.classList.add('collapsed');
+
+          const applyBtn = document.createElement('button');
+          applyBtn.id = 'imp-comp-apply';
+          applyBtn.textContent = '✓ Aplicar';
+
+          wrap.appendChild(secHtml); wrap.appendChild(secCss); wrap.appendChild(secJs); wrap.appendChild(applyBtn);
+
+          const currentHtml = ed.getHtml();
+          // GrapesJS retorna <body>...</body> — extrair apenas o conteúdo interno
+          const innerHtml = currentHtml.replace(/^<body[^>]*>([\s\S]*)<\/body>$/i, '$1').trim();
+          secHtml._editor._ta.value = formatHTML(stripScripts(innerHtml));
+          secCss._editor._ta.value  = formatCSS(ed.getCss());
+          secJs._editor._ta.value   = extractScripts(currentHtml);
+          secHtml._editor._render(); secCss._editor._render(); secJs._editor._render();
+
+          applyBtn.onclick = () => {
+            let html = secHtml._editor._ta.value;
+            const js = secJs._editor._ta.value.trim();
             if (js) html += '\n<script>\n' + js + '\n<\/script>';
             ed.setComponents(html);
-            ed.setStyle(wrap.querySelector('#comp-imp-css').value);
+            ed.setStyle(secCss._editor._ta.value);
             ed.Modal.close();
           };
-          ed.Modal.setTitle('Importar / Editar Código do Componente');
+
+          ed.Modal.setTitle('✏️ Editar / Importar Código do Componente');
           ed.Modal.setContent(wrap);
           ed.Modal.open();
+
+          setTimeout(()=>{
+            const dlg = document.querySelector('.gjs-mdl-dialog');
+            if (dlg) { dlg.style.width='min(900px,95vw)'; dlg.style.maxHeight='96vh'; dlg.style.height='96vh'; }
+            const cont = document.querySelector('.gjs-mdl-content');
+            if (cont) { cont.style.padding='0'; cont.style.overflow='hidden'; }
+            [secHtml,secCss,secJs].forEach(s=>s._editor._render());
+          }, 30);
         }
       });
 
@@ -727,20 +839,19 @@
         }
       }]);
 
-      // Component selector + Save + Delete
+      // Component selector + Save + Delete — mesmo padrão da combo de páginas
       editor.Panels.addButton('options', [{
-        id:        'comp-manager',
+        id: 'comp-manager',
         className: 'gjs-pn-btn',
         attributes: {
-          style: 'display:inline-flex;align-items:center;gap:6px;background:#222;border-radius:4px;padding:3px 8px;margin-right:8px;'
+          style: 'display:inline-flex;align-items:center;margin-right:12px;background:#222;border-radius:4px;padding:3px 6px;'
         },
         label: `
-          <select id="comp-selector"
-            style="background:transparent;color:#fff;border:none;outline:none;cursor:pointer;max-width:150px;font-size:12px;">
+          <select id="comp-selector" style="background:transparent;color:#fff;border:none;outline:none;cursor:pointer;max-width:150px;font-size:12px;">
             <option value="">— Novo componente —</option>
           </select>
-          <button id="comp-save-btn"   title="Salvar componente"  style="background:#22c55e;color:#fff;border:none;border-radius:3px;padding:2px 8px;cursor:pointer;font-size:14px;">💾</button>
-          <button id="comp-delete-btn" title="Excluir componente" style="background:#ef4444;color:#fff;border:none;border-radius:3px;padding:2px 8px;cursor:pointer;font-size:12px;display:none;">🗑️</button>
+          <button id="comp-save-btn" title="Salvar componente" style="background:#22c55e;color:#fff;border:none;border-radius:3px;padding:2px 8px;margin-left:6px;cursor:pointer;font-size:14px;">💾</button>
+          <button id="comp-delete-btn" title="Excluir componente" style="background:#ef4444;color:#fff;border:none;border-radius:3px;padding:2px 8px;margin-left:4px;cursor:pointer;font-size:12px;display:none;">🗑️</button>
         `,
         command: ''
       }]);
@@ -808,7 +919,7 @@
           if (!ok) setTimeout(function() { setPanels(collapsed); }, 200);
           toggleBtn.style.right = collapsed ? '0px' : PANEL_W + 'px';
           var svg = toggleBtn.querySelector('svg');
-          if (svg) svg.style.transform = collapsed ? 'scaleX(-1)' : 'scaleX(1)';
+          if (svg) svg.style.transform = collapsed ? 'scaleX(1)' : 'scaleX(-1)';
           setTimeout(function() { try { editor.refresh(); } catch(e) {} }, 320);
         }
 
@@ -816,6 +927,352 @@
         setTimeout(function() { setCollapsed(false); }, 600);
       })();
 
+      // ── Preview: ocultar toggle; GrapesJS já oculta os painéis ──────────────
+      editor.on('command:run:preview', function() {
+        var tb = document.getElementById('cms-drawer-toggle');
+        if (tb) tb.style.setProperty('display', 'none', 'important');
+      });
+      editor.on('command:stop:preview', function() {
+        var tb = document.getElementById('cms-drawer-toggle');
+        if (tb) tb.style.removeProperty('display');
+        // Reinjetar logo se necessário
+        setTimeout(function() {
+          if (!document.getElementById('cms-toolbar-logo') && _doInjectLogo) {
+            _doInjectLogo();
+          }
+        }, 80);
+      });
+
+      // ── Fullscreen: mover toggle para dentro do elemento fullscreen ──────────
+      // requestFullscreen() é assíncrono — usar fullscreenchange
+      (function() {
+        var PANEL_W = 320;
+        editor.on('command:run:fullscreen', function() {
+          function onFsEnter() {
+            document.removeEventListener('fullscreenchange', onFsEnter);
+            document.removeEventListener('webkitfullscreenchange', onFsEnter);
+            var tb   = document.getElementById('cms-drawer-toggle');
+            var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+            if (!tb || !fsEl) return;
+            if (!tb._origParent) {
+              tb._origParent      = tb.parentNode;
+              tb._origNextSibling = tb.nextSibling;
+            }
+            fsEl.appendChild(tb);
+            var views     = fsEl.querySelector('.gjs-pn-views');
+            var panelOpen = !views || views.style.right !== (-PANEL_W) + 'px';
+            tb.style.right = panelOpen ? PANEL_W + 'px' : '0px';
+            tb.style.removeProperty('display');
+          }
+          document.addEventListener('fullscreenchange', onFsEnter);
+          document.addEventListener('webkitfullscreenchange', onFsEnter);
+        });
+        editor.on('command:stop:fullscreen', function() {
+          function onFsExit() {
+            document.removeEventListener('fullscreenchange', onFsExit);
+            document.removeEventListener('webkitfullscreenchange', onFsExit);
+            var tb = document.getElementById('cms-drawer-toggle');
+            if (!tb || !tb._origParent) return;
+            if (tb._origNextSibling) {
+              tb._origParent.insertBefore(tb, tb._origNextSibling);
+            } else {
+              tb._origParent.appendChild(tb);
+            }
+            tb._origParent      = null;
+            tb._origNextSibling = null;
+          }
+          document.addEventListener('fullscreenchange', onFsExit);
+          document.addEventListener('webkitfullscreenchange', onFsExit);
+        });
+      }());
+
+
+      // ── Editar classe (renomear + CSS) no Style Manager ──────────────────
+      (function initClassRenameComp() {
+
+        if (!document.getElementById('cms-cls-style')) {
+          var rs = document.createElement('style');
+          rs.id = 'cms-cls-style';
+          rs.textContent = `
+            .cms-clm-edit { display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;margin-left:3px;cursor:pointer;opacity:0.5;flex-shrink:0;transition:opacity .15s; }
+            .cms-clm-edit:hover { opacity:1; }
+            .cms-clm-edit svg { fill:currentColor;display:block; }
+            #cms-cls-modal { display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.62);backdrop-filter:blur(4px);align-items:center;justify-content:center; }
+            #cms-cls-modal.open { display:flex; }
+            #cms-cls-dialog { background:#1a1b2e;border-radius:12px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 24px 64px rgba(0,0,0,0.7);padding:24px;width:520px;max-width:94vw;font-family:system-ui,sans-serif;color:#e2e4ef;animation:clsIn .18s ease; }
+            @keyframes clsIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
+            #cms-cls-dialog h4 { margin:0 0 16px;font-size:14px;font-weight:700;color:#9cdcfe;display:flex;align-items:center;gap:8px; }
+            .cms-cls-row { margin-bottom:12px; }
+            .cms-cls-label { display:block;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px; }
+            #cms-cls-name-input { width:100%;box-sizing:border-box;background:#0d0d1a;color:#9cdcfe;border:1px solid #334155;border-radius:6px;padding:8px 12px;font-size:13px;font-family:monospace;outline:none; }
+            #cms-cls-name-input:focus { border-color:#3b82f6; }
+            #cms-cls-css-input { width:100%;box-sizing:border-box;min-height:140px;background:#0d0d1a;color:#d4d4d4;border:1px solid #334155;border-radius:6px;padding:10px 12px;font-size:12px;font-family:monospace;line-height:1.7;outline:none;resize:vertical; }
+            #cms-cls-css-input:focus { border-color:#d7ba7d; }
+            .cms-cls-hint { font-size:10px;color:#4b5563;margin-top:4px; }
+            .cms-cls-btns { display:flex;gap:8px;justify-content:flex-end;margin-top:16px; }
+            .cms-cls-btns button { padding:8px 20px;border-radius:6px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s; }
+            #cms-cls-cancel { background:rgba(255,255,255,0.07);color:#9ca3af; }
+            #cms-cls-cancel:hover { background:rgba(255,255,255,0.13); }
+            #cms-cls-ok { background:#3b82f6;color:#fff; }
+            #cms-cls-ok:hover { background:#2563eb; }
+            #cms-cls-name-input[readonly] { opacity:0.55; cursor:default; }
+            #cms-cls-tw-badge { display:none; }
+
+          `;
+          document.head.appendChild(rs);
+        }
+
+        if (!document.getElementById('cms-cls-modal')) {
+          var modal = document.createElement('div');
+          modal.id = 'cms-cls-modal';
+          modal.innerHTML = `
+            <div id="cms-cls-dialog">
+              <h4>✏️ Editar Classe</h4>
+              <div class="cms-cls-row" id="cms-cls-name-row">
+                <span class="cms-cls-label">Nome da classe <span id="cms-cls-tw-badge" style="display:none;margin-left:6px;background:#0f3460;color:#38bdf8;font-size:9px;padding:1px 6px;border-radius:3px;font-weight:700;letter-spacing:.04em;vertical-align:middle;">TAILWIND</span></span>
+                <input id="cms-cls-name-input" type="text" autocomplete="off" spellcheck="false" placeholder="nome-da-classe" />
+                <div class="cms-cls-hint">Tailwind: nome somente leitura. Classes custom: renomeie livremente.</div>
+              </div>
+              <div class="cms-cls-row">
+                <span class="cms-cls-label">Propriedades CSS</span>
+                <textarea id="cms-cls-css-input" spellcheck="false" placeholder="color: red;\nfont-size: 16px;"></textarea>
+                <div class="cms-cls-hint" id="cms-cls-css-hint">Escreva as propriedades (sem seletor, sem chaves). Ctrl+Enter aplica.</div>
+              </div>
+              <div class="cms-cls-btns">
+                <button id="cms-cls-cancel">Cancelar</button>
+                <button id="cms-cls-ok">✓ Aplicar</button>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+          document.getElementById('cms-cls-cancel').onclick = function() { modal.classList.remove('open'); };
+          modal.addEventListener('click', function(e) { if (e.target === modal) modal.classList.remove('open'); });
+          document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && modal.classList.contains('open')) modal.classList.remove('open'); });
+        }
+
+        var pencilSVG = '<svg width="10" height="10" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+
+        // Extrair propriedades CSS de uma classe do CSS atual
+
+        // Prefixos/padrões de classes Tailwind conhecidas
+        var TAILWIND_PATTERNS = [
+          /^(m|p)[trblxy]?-/, /^(w|h)-/, /^(min|max)-(w|h)-/,
+          /^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl|left|center|right|justify|gray|red|blue|green|yellow|indigo|purple|pink|white|black)/,
+          /^(font)-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black|sans|serif|mono)/,
+          /^(bg|border|ring|shadow|outline)(-|$)/, /^(flex|grid|block|inline|hidden|table)(-|$)/,
+          /^(items|justify|self|content|place)(-|$)/, /^(gap|space)(-|$)/,
+          /^(rounded|overflow|opacity|cursor|pointer|select|resize)(-|$)/,
+          /^(absolute|relative|fixed|sticky|static)$/, /^(top|right|bottom|left|inset)(-|$)/,
+          /^(z|order)(-|$)/, /^(col|row)(-|$)/, /^(transition|duration|ease|delay|animate)(-|$)/,
+          /^(scale|rotate|translate|skew|origin)(-|$)/, /^(sr-only|not-sr-only)$/,
+          /^(leading|tracking|whitespace|break|truncate|line-clamp)(-|$)/,
+          /^(list|decoration|underline|italic|uppercase|lowercase|capitalize|normal-case)(-|$)/,
+          /^(border-(t|r|b|l|x|y|0|2|4|8|solid|dashed|dotted|double|none))$/,
+          /^(divide|ring|shadow)(-|$)/, /^(container|prose|aspect)(-|$)/,
+          /^(sm:|md:|lg:|xl:|2xl:|hover:|focus:|active:|disabled:|dark:)/,
+          /^(p|m)\d/, /^(w|h)\d/, /^(text|bg|border)-\[/
+        ];
+        function isTailwindClass(cls) {
+          return TAILWIND_PATTERNS.some(function(rx) { return rx.test(cls); });
+        }
+
+        // Tentar ler o CSS computado da classe do canvas do GrapesJS
+        function getComputedClassCss(className) {
+          try {
+            var iframe = document.querySelector('.gjs-frame');
+            if (!iframe) return null;
+            var doc = iframe.contentDocument || iframe.contentWindow.document;
+            // Criar elemento temporário com a classe para obter o computado
+            var tmp = doc.createElement('div');
+            tmp.className = className;
+            tmp.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;';
+            doc.body.appendChild(tmp);
+            var computed = iframe.contentWindow.getComputedStyle(tmp);
+            // Coletar propriedades não-default relevantes
+            var props = [
+              'color','background-color','background','font-size','font-weight','font-family',
+              'line-height','letter-spacing','text-align','text-decoration','text-transform',
+              'padding','padding-top','padding-right','padding-bottom','padding-left',
+              'margin','margin-top','margin-right','margin-bottom','margin-left',
+              'width','height','min-width','min-height','max-width','max-height',
+              'display','flex-direction','align-items','justify-content','flex-wrap','gap',
+              'grid-template-columns','grid-template-rows',
+              'border','border-radius','border-color','border-width','border-style',
+              'box-shadow','opacity','overflow','position','top','right','bottom','left',
+              'z-index','cursor','transition','transform'
+            ];
+            var lines = [];
+            props.forEach(function(p) {
+              var val = computed.getPropertyValue(p);
+              if (val && val !== '' && val !== 'none' && val !== 'normal' && val !== 'auto'
+                  && val !== '0px' && val !== 'rgba(0, 0, 0, 0)' && val !== 'rgb(0, 0, 0)'
+                  && val !== 'static' && val !== 'visible' && val !== '1') {
+                // Skip shorthand if already individual values collected
+                if ((p === 'padding' || p === 'margin') && lines.some(function(l){ return l.startsWith(p+'-'); })) return;
+                lines.push(p + ': ' + val + ';');
+              }
+            });
+            doc.body.removeChild(tmp);
+            return lines.length ? lines.join('\n') : null;
+          } catch(e) { return null; }
+        }
+
+        // Extrair propriedades CSS de uma classe do CSS gerenciado pelo GrapesJS
+        function getClassCssBody(className) {
+          var css = editor.getCss() || '';
+          var escaped = className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          var rx = new RegExp('[^}]*\\.\\s*' + escaped + '\\s*\\{([^}]*)\\}', 'i');
+          var m = css.match(rx);
+          if (!m) return '';
+          return m[1].replace(/;\s*/g, ';\n').replace(/^\s+|\s+$/gm, '').trim();
+        }
+
+        // Substituir/inserir regra CSS de uma classe no GrapesJS
+        function setClassCssBody(className, newBody) {
+          var css = editor.getCss() || '';
+          var escaped = className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          var rx = new RegExp('[^{]*\\.\\s*' + escaped + '\\s*\\{[^}]*\\}', 'gi');
+          var newRule = '.' + className + ' { ' + newBody.trim().replace(/\n/g, ' ') + ' }';
+          if (rx.test(css)) {
+            css = css.replace(rx, newRule);
+          } else {
+            css = css + '\n' + newRule;
+          }
+          editor.setStyle(css);
+        }
+
+        function injectEditButtons() {
+          document.querySelectorAll('.gjs-clm-tag').forEach(function(tag) {
+            if (tag.querySelector('.cms-clm-edit')) return;
+            var closeBtn = tag.querySelector('.gjs-clm-tag-close');
+            if (!closeBtn) return;
+
+            var editBtn = document.createElement('span');
+            editBtn.className = 'cms-clm-edit';
+            editBtn.title = 'Editar classe (CSS + renomear)';
+            editBtn.innerHTML = pencilSVG;
+
+            editBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+
+              // Obter nome atual da classe
+              var tagText = '';
+              tag.childNodes.forEach(function(n) { if (n.nodeType === 3 && n.textContent.trim()) tagText = n.textContent.trim(); });
+              if (!tagText) {
+                var st = tag.querySelector('.gjs-clm-tag-status');
+                tagText = st ? tag.textContent.replace(st.textContent, '').trim() : tag.textContent.trim();
+              }
+
+              tagText = tagText.replace(/^\./, '').trim();
+
+              var isTW   = isTailwindClass(tagText);
+              var modal   = document.getElementById('cms-cls-modal');
+              var nameInp = document.getElementById('cms-cls-name-input');
+              var cssInp  = document.getElementById('cms-cls-css-input');
+              var hintEl  = document.getElementById('cms-cls-css-hint');
+              var badgeEl = document.getElementById('cms-cls-tw-badge');
+              var nameRow = document.getElementById('cms-cls-name-row');
+
+              // Classe Tailwind: nome não é editável (não faz sentido renomear)
+              // Classe custom: editável normalmente
+              nameInp.value    = tagText;
+              nameInp.readOnly = isTW;
+              nameInp.style.color    = isTW ? '#6b7280' : '';
+              nameInp.style.cursor   = isTW ? 'default' : '';
+              nameInp.style.borderColor = isTW ? '#1f2937' : '';
+              if (badgeEl) badgeEl.style.display = isTW ? 'inline-flex' : 'none';
+
+              // Preencher CSS:
+              // - Custom: CSS do GrapesJS (o que foi salvo no editor)
+              // - Tailwind: CSS computado do canvas OU vazio (para criar override)
+              var existingCss = getClassCssBody(tagText);
+              if (existingCss) {
+                cssInp.value = existingCss;
+                if (hintEl) hintEl.textContent = isTW
+                  ? 'Override Tailwind ativo. Ctrl+Enter aplica. Limpe o campo para remover o override.'
+                  : 'Propriedades da classe. Ctrl+Enter aplica.';
+              } else if (isTW) {
+                // Tentar mostrar o CSS computado como referência (read-only comentado)
+                var computed = getComputedClassCss(tagText);
+                if (computed) {
+                  cssInp.value = '/* CSS Tailwind atual (leitura) — edite para criar override: */\n/*\n' + computed + '\n*/\n\n/* Seu override: */\n';
+                } else {
+                  cssInp.value = '/* Classe Tailwind: escreva propriedades para sobrescrever */\n';
+                }
+                if (hintEl) hintEl.textContent = 'Tailwind: escreva propriedades para criar override. Ctrl+Enter aplica.';
+              } else {
+                cssInp.value = '';
+                if (hintEl) hintEl.textContent = 'Classe custom sem CSS no editor. Escreva as propriedades. Ctrl+Enter aplica.';
+              }
+
+              modal.classList.add('open');
+              setTimeout(function() { cssInp.focus(); cssInp.setSelectionRange(cssInp.value.length, cssInp.value.length); }, 60);
+
+              function doApply() {
+                var newName = nameInp.value.trim().replace(/^\./, '');
+                var newCss  = cssInp.value.trim();
+                if (!newName) { modal.classList.remove('open'); return; }
+                modal.classList.remove('open');
+
+                // Para Tailwind: não renomear nunca; só aplicar override CSS
+                // Remover blocos de comentário antes de aplicar (o usuário pode ter deixado o placeholder)
+                var cssToApply = newCss
+                  .replace(/\/\*[\s\S]*?\*\//g, '')  // remover comentários /* ... */
+                  .trim();
+
+                // 1. Aplicar CSS
+                if (cssToApply !== '') {
+                  setClassCssBody(tagText, cssToApply);
+                }
+
+                // 2. Renomear — apenas se não for Tailwind e o nome mudou
+                var renamed = (!isTW && newName !== tagText);
+                if (renamed) {
+                  var sm = editor.SelectorManager;
+                  var sel = sm.get('.' + tagText);
+                  if (sel) { sel.set('name', newName); sel.set('label', newName); }
+                  var currentCss = editor.getCss() || '';
+                  var esc = tagText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                  editor.setStyle(currentCss.replace(new RegExp('\\.' + esc, 'g'), '.' + newName));
+                  editor.getSelectedAll().forEach(function(comp) {
+                    if (comp.getClasses().indexOf(tagText) > -1) {
+                      comp.removeClass(tagText);
+                      comp.addClass(newName);
+                    }
+                  });
+                }
+
+                try { editor.refresh(); } catch(err) {}
+              }
+
+              // Registrar handlers (sobrescrever anteriores)
+              document.getElementById('cms-cls-ok').onclick = doApply;
+              nameInp.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); cssInp.focus(); } };
+              // Remover handler anterior antes de adicionar novo
+              if (cssInp._applyHandler) cssInp.removeEventListener('keydown', cssInp._applyHandler);
+              cssInp._applyHandler = function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); doApply(); }
+              };
+              cssInp.addEventListener('keydown', cssInp._applyHandler);
+            });
+
+            tag.insertBefore(editBtn, closeBtn);
+          });
+        }
+
+        var clmObs = new MutationObserver(function() { injectEditButtons(); });
+        editor.on('load', function() {
+          setTimeout(function() {
+            var area = document.querySelector('.gjs-clm-tags, .gjs-pn-views-container');
+            if (area) clmObs.observe(area, { childList: true, subtree: true });
+            injectEditButtons();
+          }, 800);
+        });
+        editor.on('component:selected', function() { setTimeout(injectEditButtons, 100); });
+
+      }());
+
+      // ── Toolbar: ajuste
       // ── Toolbar: ajuste dinâmico do canvas top quando a toolbar quebra ─────
       (function watchToolbarHeight() {
         var commands = document.querySelector('.gjs-pn-commands');

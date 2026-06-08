@@ -1,4 +1,6 @@
 ---
+// Visual CMS 360° — Copyright (C) 2025 Gerson Luis Vertematti
+// GNU GPL v3 — https://www.gnu.org/licenses/gpl-3.0.html
 // Editor standalone — não usa Layout para evitar conflito com Tailwind global
 ---
 <!DOCTYPE html>
@@ -8,6 +10,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Visual CMS — Editor</title>
   <link rel="stylesheet" href="/vendor/grapes.min.css" />
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
   <!-- Pannellum — usado pelo componente Virtual Tour 360 -->
   <link rel="stylesheet" href="/vendor/pannellum.min.css" />
   <script is:inline src="/vendor/pannellum.min.js"></script>
@@ -49,43 +52,32 @@
       min-height: 40px !important;
     }
 
-    /* ── Painel devices-c: logo + combo lado a lado ──────────────────────── */
-    .gjs-pn-devices-c {
-      display: flex !important;
-      align-items: center !important;
-      gap: 0 !important;
-      padding: 0 !important;
-      width: auto !important;
-      min-width: 0 !important;
-      overflow: visible !important;
-      height: 40px !important;   /* igual à toolbar de comandos */
-      max-height: 40px !important;
-    }
+    /* ── Painel devices-c: estilizado via JS para não conflitar com gjs-hidden */
+
+    /* ── Preview mode: GrapesJS já oculta os painéis — só precisamos do toggle */
 
     /* Logo injetado via JS */
     #cms-toolbar-logo {
       display: flex;
       align-items: center;
-      padding: 0 10px 0 6px;
+      padding: 0 8px;
       flex-shrink: 0;
-      height: 100%;
-      max-height: 40px;
+      height: 40px;
       overflow: hidden;
       border-right: 1px solid rgba(255,255,255,0.12);
-      margin-right: 8px;
+      margin-right: 4px;
+      cursor: pointer;
     }
     #cms-toolbar-logo img {
-      height: 24px;        /* metade do tamanho natural da imagem (300x49) */
+      height: 22px;
       width: auto;
       display: block;
-      pointer-events: none;
       user-select: none;
     }
 
-    /* Esconder label "Device" nativo — span de texto dentro do painel devices */
-    .gjs-pn-devices-c > span:first-of-type,
-    .gjs-pn-devices-c .gjs-select-label,
-    .gjs-devices-c > span {
+    /* Esconder label "Device" nativo — apenas o span de texto direto */
+    [class*="devices-c"] > span:first-of-type,
+    [class*="devices-c"] .gjs-select-label {
       display: none !important;
     }
 
@@ -95,7 +87,7 @@
       right: var(--cms-panel-width);
       top: 50%;
       transform: translateY(-50%);
-      z-index: 50;
+      z-index: 99;
       width: 18px;
       height: 48px;
       background: #444754;
@@ -140,6 +132,10 @@
     }
 
     #cms-drawer-toggle svg { transition: transform 0.3s ease; flex-shrink: 0; }
+
+    /* Ocultar botão nativo "View Code" do GrapesJS (substituído pelo importador) */
+    /* Usando :global() para evitar scoped CSS do Astro */
+    :global(.gjs-pn-options .fa-code) { display: none !important; }
   </style>
 </head>
 <body>
@@ -157,6 +153,7 @@
   <script is:inline src="/vendor/grapesjs-tailwind.min.js"></script>
   <script is:inline src="/vendor/grapesjs-blocks-basic.min.js"></script>
 
+  <script is:inline src="/vendor/jquery.min.js"></script>
   <script is:inline src="/js/editor-main.js"></script>
 </body>
 </html>
