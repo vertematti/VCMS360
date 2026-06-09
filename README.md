@@ -14,7 +14,7 @@
 
 <p align="center">
   <img alt="License: GPL v3" src="https://img.shields.io/badge/License-GPLv3-blue.svg">
-  <img alt="Node >= 22" src="https://img.shields.io/badge/node-%3E%3D22.12.0-brightgreen">
+  <img alt="Node 22" src="https://img.shields.io/badge/node-%3E%3D22.12.0-brightgreen">
   <img alt="Astro" src="https://img.shields.io/badge/Astro-6.x-orange">
 </p>
 
