@@ -49,7 +49,6 @@ Gerson é **Educador Maker voluntário** do [Open Maker](https://www.dispensados
 - **Editor HTML/CSS/JS** — edição de código com syntax highlight e indentação automática
 - **Build integrado** — geração de site estático (`npm run build`) com log em tempo real
 - **Exportar/Importar** — backup e restauração seletiva do projeto em arquivo ZIP
-- **Painel Sobre** — informações do projeto acessíveis no painel lateral
 - **Multi-página** — suporte a múltiplas páginas por projeto
 
 ---
