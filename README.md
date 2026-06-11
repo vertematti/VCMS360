@@ -22,9 +22,8 @@
 
 ## 👤 Autor
 
-| | |
-|---|---|
 | **Nome** | Gerson Luis Vertematti |
+|---|---|
 | **Portal** | [gersonlv.com.br](https://gersonlv.com.br) |
 | **Contato** | [gersonlv@gmail.com](mailto:gersonlv@gmail.com) |
 | **Documentação** | [gersonlv.com.br/visual_cms_360](https://gersonlv.com.br/visual_cms_360) |
