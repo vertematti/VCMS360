@@ -42,12 +42,13 @@ Gerson é **Educador Maker voluntário** do [Open Maker](https://www.dispensados
 ## ✨ Funcionalidades
 
 - **Editor visual de páginas** — drag-and-drop com GrapesJS + Tailwind CSS (Tailblocks)
-- **Editor de componentes** — criação e reutilização de blocos customizados
+- **Editor de componentes** — criação e reutilização de blocos customizados, com sincronização automática nas páginas que os utilizam
 - **Tour Virtual 360°** — Foto 360° (Pannellum) e Vídeo 360° (A-Frame), com hotspots interativos de imagem, vídeo, tooltip e navegação entre cenas
 - **Galeria de Fotos** — lightbox com zoom, pan, fullscreen e suporte mobile-first
-- **Editor HTML/CSS/JS** — edição de código com syntax highlight e indentação automática
+- **Editor de código HTML/CSS/JS/jQuery** — campos separados com syntax highlight e indentação automática; o código jQuery é agregado e envolvido em `$(function(){ ... })` automaticamente nas páginas publicadas
+- **Editor de classes CSS** — renomeação e edição de propriedades direto no Style Manager, com detecção de classes Tailwind
 - **Build integrado** — geração de site estático (`npm run build`) com log em tempo real
-- **Exportar/Importar** — backup e restauração seletiva do projeto em arquivo ZIP
+- **Exportar/Importar** — backup e restauração seletiva de páginas e componentes em arquivo ZIP, com detecção de conflitos
 - **Multi-página** — suporte a múltiplas páginas por projeto
 
 ---

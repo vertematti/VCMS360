@@ -40,6 +40,11 @@ com a GPL v3 e não são afetadas pelo licenciamento deste projeto.
    Licença: MIT License
    https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE
 
+6.1 @tailwindcss/vite (plugin Vite oficial do Tailwind)
+   Copyright (c) Tailwind Labs, Inc.
+   Licença: MIT License
+   https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE
+
 7. A-Frame
    Copyright (c) 2015 Mozilla Corporation
    Licença: MIT License

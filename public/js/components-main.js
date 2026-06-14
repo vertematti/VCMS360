@@ -759,6 +759,8 @@
                 <div class="cms-about-lic-row"><span style="color:#9ca3af;">Pannellum</span><span class="cms-about-badge-sec">MIT</span></div>
                 <div class="cms-about-lic-row"><span style="color:#9ca3af;">Tailwind CSS</span><span class="cms-about-badge-sec">MIT</span></div>
                 <div class="cms-about-lic-row"><span style="color:#9ca3af;">Cheerio</span><span class="cms-about-badge-sec">MIT</span></div>
+                <div class="cms-about-lic-row"><span style="color:#9ca3af;">jQuery</span><span class="cms-about-badge-sec">MIT</span></div>
+                <div class="cms-about-lic-row"><span style="color:#9ca3af;">Font Awesome</span><span class="cms-about-badge-sec">MIT + OFL</span></div>
               </div>
             </div>
 
