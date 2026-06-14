@@ -24,6 +24,7 @@
 
     // ── State ────────────────────────────────────────────────────────────────
     let currentSlug    = 'index';
+    let currentPageData = null;  // dados da página atual (js, jquery, etc.)
     let availablePages = ['index'];
     let savedComponents = {};   // name → { html, css }
 
@@ -2559,6 +2560,9 @@
         // Update available pages list
         if (data.availablePages) availablePages = data.availablePages;
 
+        // Guardar dados da página (incluindo js e jquery) para o modal de código
+        currentPageData = data;
+
         // Load content into editor
         if (data.projectData && data.projectData.pages && data.projectData.pages.length > 0) {
           editor.loadProjectData(data.projectData);
@@ -2626,8 +2630,13 @@
           slug: currentSlug,
           html: editor.getHtml(),
           css: editor.getCss(),
+          js: (editor._pendingPageJs !== undefined ? editor._pendingPageJs : (currentPageData?.js || '')),
+          jquery: (editor._pendingPageJquery !== undefined ? editor._pendingPageJquery : (currentPageData?.jquery || '')),
           projectData: editor.getProjectData()
         };
+        // limpar pendências após montar payload
+        delete editor._pendingPageJs;
+        delete editor._pendingPageJquery;
         const res = await fetch('/api/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3676,24 +3685,70 @@
         }
 
         function highlightCSS(code) {
-          return code
-            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-            // comentários
-            .replace(/(\/\*[\s\S]*?\*\/)/g,'<span style="color:#6a9955">$1</span>')
-            // seletores
-            .replace(/^([^{}\n]+)\{/gm,'<span style="color:#d7ba7d">$1</span>{')
-            // propriedades
-            .replace(/^\s+([\w-]+):/gm,(m,p)=>`  <span style="color:#9cdcfe">${p}</span>:`)
-            // valores
-            .replace(/:\s*([^;{\n]+)/g,(m,v)=>`: <span style="color:#ce9178">${v}</span>`);
+          // Escapar tudo primeiro
+          let esc = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          // Processar linha a linha para evitar contaminação entre spans
+          const lines = esc.split('\n');
+          let inComment = false;
+          const out = lines.map(line => {
+            // Comentários multilinha
+            if (inComment) {
+              if (line.includes('*/')) {
+                const idx = line.indexOf('*/') + 2;
+                const commented = '<span style="color:#6a9955">' + line.slice(0, idx) + '</span>';
+                inComment = false;
+                return commented + highlightCssLine(line.slice(idx));
+              }
+              return '<span style="color:#6a9955">' + line + '</span>';
+            }
+            // Comentário inicia nesta linha?
+            const cStart = line.indexOf('/*');
+            if (cStart > -1 && line.indexOf('*/', cStart) === -1) {
+              inComment = true;
+              return highlightCssLine(line.slice(0, cStart)) +
+                '<span style="color:#6a9955">' + line.slice(cStart) + '</span>';
+            }
+            return highlightCssLine(line);
+          });
+          return out.join('\n');
+        }
+        function highlightCssLine(line) {
+          // Comentário inline completo /* ... */
+          line = line.replace(/(\/\*.*?\*\/)/g, '\x00C\x01$1\x00c\x01');
+          // Seletor: linha que termina com {
+          if (/\{\s*$/.test(line) && !line.includes(':')) {
+            line = line.replace(/^(\s*)([^{]+?)(\s*\{\s*)$/,
+              '$1\x00S\x01$2\x00s\x01$3');
+          } else {
+            // Propriedade: valor;
+            line = line.replace(/^(\s*)([\w-]+)(\s*:\s*)([^;]*)(;?)\s*$/,
+              '$1\x00P\x01$2\x00p\x01$3\x00V\x01$4\x00v\x01$5');
+          }
+          // Converter marcadores em spans (seguro, pois texto já escapado)
+          return line
+            .replace(/\x00C\x01/g,'<span style="color:#6a9955">').replace(/\x00c\x01/g,'</span>')
+            .replace(/\x00S\x01/g,'<span style="color:#d7ba7d">').replace(/\x00s\x01/g,'</span>')
+            .replace(/\x00P\x01/g,'<span style="color:#9cdcfe">').replace(/\x00p\x01/g,'</span>')
+            .replace(/\x00V\x01/g,'<span style="color:#ce9178">').replace(/\x00v\x01/g,'</span>');
         }
         function highlightJS(code) {
-          return code
-            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-            .replace(/(\/\/[^\n]*)/g,'<span style="color:#6a9955">$1</span>')
-            .replace(/(\/\*[\s\S]*?\*\/)/g,'<span style="color:#6a9955">$1</span>')
-            .replace(/\b(var|let|const|function|return|if|else|for|while|do|new|this|class|import|export|from|async|await|try|catch|finally|typeof|instanceof|null|undefined|true|false)\b/g,'<span style="color:#c586c0">$1</span>')
-            .replace(/(['"``])(.*?)\1/g,'<span style="color:#ce9178">$1$2$1</span>');
+          // Escapar primeiro
+          let esc = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          // Usar marcadores temporários para evitar contaminação
+          // Comentários de linha
+          esc = esc.replace(/(\/\/[^\n]*)/g,'\x00C\x01$1\x00c\x01');
+          // Comentários de bloco
+          esc = esc.replace(/(\/\*[\s\S]*?\*\/)/g,'\x00C\x01$1\x00c\x01');
+          // Strings
+          esc = esc.replace(/('[^'\n]*'|"[^"\n]*"|`[^`]*`)/g,'\x00T\x01$1\x00t\x01');
+          // Keywords (só fora de marcadores já inseridos)
+          esc = esc.replace(/\b(var|let|const|function|return|if|else|for|while|do|new|this|class|import|export|from|async|await|try|catch|finally|typeof|instanceof|null|undefined|true|false)\b/g,
+            '\x00K\x01$1\x00k\x01');
+          // Converter marcadores em spans
+          return esc
+            .replace(/\x00C\x01/g,'<span style="color:#6a9955">').replace(/\x00c\x01/g,'</span>')
+            .replace(/\x00T\x01/g,'<span style="color:#ce9178">').replace(/\x00t\x01/g,'</span>')
+            .replace(/\x00K\x01/g,'<span style="color:#c586c0">').replace(/\x00k\x01/g,'</span>');
         }
 
         // ── Editor sintático baseado em div[contenteditable] ────────────────
@@ -3809,42 +3864,73 @@
 
         const secHtml = makeSection('HTML', 'html', '#4ec9b0');
         const secCss  = makeSection('CSS',  'css',  '#d7ba7d');
-        const secJs   = makeSection('JavaScript', 'js', '#c586c0', '// Seu JavaScript aqui (sem as tags <script>)');
+        const secJs   = makeSection('JavaScript', 'js', '#c586c0', '// JavaScript puro (sem jQuery, sem tags <script>)');
+        const secJq   = makeSection('jQuery', 'js', '#2563eb', '// Codigo jQuery - sera envolvido em $(function(){ ... }) na pagina');
 
-        // Start CSS and JS collapsed
+        // Start CSS, JS and jQuery collapsed
         secCss.classList.add('collapsed');
         secJs.classList.add('collapsed');
+        secJq.classList.add('collapsed');
 
         const applyBtn = document.createElement('button');
         applyBtn.id = 'imp-apply-btn';
-        applyBtn.textContent = '✓ Aplicar';
+        applyBtn.textContent = '\u2713 Aplicar';
 
         wrap.appendChild(secHtml);
         wrap.appendChild(secCss);
         wrap.appendChild(secJs);
+        wrap.appendChild(secJq);
         wrap.appendChild(applyBtn);
 
+        // Separar JS puro de jQuery
+        function splitJsAndJquery(rawJs) {
+          if (!rawJs || !rawJs.trim()) return { js: '', jquery: '' };
+          const fnMatch = rawJs.match(/^\s*\$\(\s*function\s*\([^)]*\)\s*\{([\s\S]*)\}\s*\)\s*;?\s*$/);
+          const readyMatch = rawJs.match(/^\s*\$\(\s*document\s*\)\.ready\s*\(\s*function\s*\([^)]*\)\s*\{([\s\S]*)\}\s*\)\s*;?\s*$/);
+          if (fnMatch) return { js: '', jquery: fnMatch[1].trim() };
+          if (readyMatch) return { js: '', jquery: readyMatch[1].trim() };
+          if (/[\$]|jQuery/.test(rawJs)) return { js: '', jquery: rawJs.trim() };
+          return { js: rawJs.trim(), jquery: '' };
+        }
+
         const currentHtml = ed.getHtml();
-        // GrapesJS retorna <body>...</body> — extrair apenas o conteúdo interno
+        // GrapesJS retorna <body>...</body> - extrair apenas o conteudo interno
         const innerHtml = currentHtml.replace(/^<body[^>]*>([\s\S]*)<\/body>$/i, '$1').trim();
         secHtml._editor._ta.value = formatHTML(stripScripts(innerHtml));
         secCss._editor._ta.value  = formatCSS(ed.getCss());
-        secJs._editor._ta.value   = extractScripts(currentHtml);
+
+        // Carregar JS e jQuery - preferir campos salvos da pagina
+        if (typeof currentPageData !== 'undefined' && currentPageData && (currentPageData.js || currentPageData.jquery)) {
+          secJs._editor._ta.value = currentPageData.js || '';
+          secJq._editor._ta.value = currentPageData.jquery || '';
+        } else {
+          const extracted = extractScripts(currentHtml);
+          const split = splitJsAndJquery(extracted);
+          secJs._editor._ta.value = split.js;
+          secJq._editor._ta.value = split.jquery;
+        }
         secHtml._editor._render();
         secCss._editor._render();
         secJs._editor._render();
+        secJq._editor._render();
 
         applyBtn.onclick = () => {
           let html = secHtml._editor._ta.value;
           const js = secJs._editor._ta.value.trim();
-          if (js) html += '\n<script>\n' + js + '\n<\/script>';
+          const jq = secJq._editor._ta.value.trim();
+          let scriptContent = '';
+          if (js) scriptContent += js + '\n';
+          if (jq) scriptContent += '\n$(function(){\n' + jq + '\n});\n';
+          if (scriptContent.trim()) html += '\n<script>\n' + scriptContent + '\n<\/script>';
           ed.setComponents(html);
           ed.setStyle(secCss._editor._ta.value);
+          ed._pendingPageJs = js;
+          ed._pendingPageJquery = jq;
           ed.Modal.close();
         };
 
         // Make GrapesJS modal taller
-        ed.Modal.setTitle('✏️ Editar / Importar Código');
+        ed.Modal.setTitle('\u270f\ufe0f Editar / Importar Codigo');
         ed.Modal.setContent(wrap);
         ed.Modal.open();
 
@@ -3858,8 +3944,7 @@
           }
           const cont = document.querySelector('.gjs-mdl-content');
           if (cont) { cont.style.padding = '0'; cont.style.overflow = 'hidden'; }
-          // trigger render after layout is known
-          [secHtml, secCss, secJs].forEach(s => s._editor._render());
+          [secHtml, secCss, secJs, secJq].forEach(s => s._editor._render());
         }, 30);
       }
     });

@@ -37,7 +37,8 @@ try {
 
 let finalHtml = pageData.html || '';
 let finalCss = pageData.css || '';
-let finalJs = '';  // JS agregado de todos os componentes
+let finalJs = '';       // JS puro agregado (componentes + página)
+let finalJquery = '';   // Código jQuery agregado (vai dentro de $(function(){}))
 
 if (finalHtml) {
   const $ = cheerio.load(finalHtml);
@@ -47,9 +48,12 @@ if (finalHtml) {
     if (id && components[id]) {
       $(el).html(components[id].html || '');
       finalCss += '\n' + (components[id].css || '');
-      // Agregar JS do componente (separado do HTML)
+      // Agregar JS puro do componente
       const compJs = components[id].js || '';
-      if (compJs.trim()) finalJs += '\n// == Componente: ' + id + ' ==\n' + compJs + '\n';
+      if (compJs.trim()) finalJs += '\n/* == Componente: ' + id + ' (JS) == */\n' + compJs + '\n';
+      // Agregar jQuery do componente (será envolvido em $(function(){}) depois)
+      const compJq = components[id].jquery || '';
+      if (compJq.trim()) finalJquery += '\n/* == Componente: ' + id + ' (jQuery) == */\n' + compJq + '\n';
     }
   });
 
@@ -60,6 +64,32 @@ if (finalHtml) {
   } else {
     finalHtml = $.html();
   }
+}
+
+// Adicionar JS e jQuery próprios da página (se existirem)
+if (pageData.js && pageData.js.trim()) {
+  finalJs += '\n/* == Página: ' + slug + ' (JS) == */\n' + pageData.js + '\n';
+}
+if (pageData.jquery && pageData.jquery.trim()) {
+  finalJquery += '\n/* == Página: ' + slug + ' (jQuery) == */\n' + pageData.jquery + '\n';
+}
+
+// Montar o bloco final de scripts:
+// 1. JS puro roda imediatamente (após o HTML já estar no DOM)
+// 2. jQuery roda dentro de $(function(){...}) garantindo DOM + jQuery prontos
+let combinedScript = '';
+if (finalJs.trim()) {
+  combinedScript += finalJs + '\n';
+}
+if (finalJquery.trim()) {
+  combinedScript += '\n// === jQuery agregado (DOM ready) ===\n';
+  combinedScript += 'if (window.jQuery) {\n';
+  combinedScript += '  jQuery(function ($) {\n';
+  combinedScript += finalJquery.split('\n').map(l => '    ' + l).join('\n') + '\n';
+  combinedScript += '  });\n';
+  combinedScript += '} else {\n';
+  combinedScript += '  console.warn("[VisualCMS360] jQuery não encontrado — código jQuery dos componentes não executado.");\n';
+  combinedScript += '}\n';
 }
 ---
 
@@ -81,8 +111,9 @@ if (finalHtml) {
   <!-- Page HTML from GrapesJS -->
   <Fragment set:html={finalHtml} />
 
-  <!-- JS dos componentes injetado após o HTML, com jQuery/FA já disponíveis -->
-  {finalJs.trim() && (
-    <script set:html={finalJs} is:inline></script>
+  <!-- JS + jQuery agregado dos componentes e da página.
+       JS puro roda direto; jQuery roda dentro de jQuery(function($){...}). -->
+  {combinedScript.trim() && (
+    <script set:html={combinedScript} is:inline></script>
   )}
 </Layout>

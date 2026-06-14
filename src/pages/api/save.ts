@@ -27,6 +27,8 @@ export const POST: APIRoute = async ({ request }) => {
       slug,
       html: data.html || '',
       css: data.css || '',
+      js: data.js || '',
+      jquery: data.jquery || '',
       projectData: data.projectData || {}
     };
 
