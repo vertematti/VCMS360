@@ -47,7 +47,7 @@ Gerson é **Educador Maker voluntário** do [Open Maker](https://www.dispensados
 - **Galeria de Fotos** — lightbox com zoom, pan, fullscreen e suporte mobile-first
 - **Editor de código HTML/CSS/JS/jQuery** — campos separados com syntax highlight e indentação automática; o código jQuery é agregado e envolvido em `$(function(){ ... })` automaticamente nas páginas publicadas
 - **Editor de classes CSS** — renomeação e edição de propriedades direto no Style Manager, com detecção de classes Tailwind
-- **Build integrado** — geração de site estático (`npm run build`) com log em tempo real
+- **Build & publicação** — compilação SSR (`npm run build`) e exportação de site estático sem Node (`npm run export:static`) para qualquer host
 - **Exportar/Importar** — backup e restauração seletiva de páginas e componentes em arquivo ZIP, com detecção de conflitos
 - **Multi-página** — suporte a múltiplas páginas por projeto
 
@@ -75,9 +75,59 @@ Acesse o editor em: **[http://localhost:4321/editor](http://localhost:4321/edito
 
 | Comando | Descrição |
 |---|---|
-| `npm run dev` | Inicia o servidor de desenvolvimento |
-| `npm run build` | Gera o site estático em `/dist` |
-| `npm run preview` | Visualiza o build gerado |
+| `npm run dev` | Inicia o servidor de desenvolvimento + editor em `http://localhost:4321/editor` |
+| `npm run build` | Compila o projeto SSR para `/dist` (`dist/server` + `dist/client`) |
+| `npm run preview` | Sobe localmente o build SSR de `/dist` para conferência |
+| `npm run export:static` | Gera um **site estático** em `/dist-static` para publicar em qualquer host |
+
+---
+
+## 🌐 Publicando um site estático (`npm run export:static`)
+
+O Visual CMS 360° roda em modo **SSR** (renderização no servidor, via Node) durante a edição e na pré-visualização. Mas o site final que você publica normalmente **não precisa de Node** — basta HTML, CSS, JS e imagens. É exatamente isso que o `export:static` produz.
+
+### Por que existem dois "builds"?
+
+- `npm run build` → gera a aplicação **SSR** em `/dist` (precisa de Node rodando para servir as páginas). É o que o editor e o `preview` usam.
+- `npm run export:static` → gera o **site publicável** em `/dist-static` (HTML puro + assets, **sem Node**).
+
+O `export:static` **não substitui** o `build` — ele depende dele.
+
+### Fluxo de publicação (2 passos)
+
+```bash
+# 1. Compilar a aplicação SSR (obrigatório antes de exportar)
+npm run build
+
+# 2. Gerar o site estático a partir do SSR já compilado
+npm run export:static
+```
+
+Ao final, a pasta **`/dist-static`** conterá o site pronto. Suba o **conteúdo dessa pasta** (não a pasta em si) na raiz de qualquer servidor estático: Apache, Nginx, GitHub Pages, Netlify, Vercel, Cloudflare Pages, ou hospedagem compartilhada comum.
+
+### Como funciona (e por que é confiável)
+
+O exportador **não reimplementa** a renderização. Ele sobe internamente o servidor de produção recém-compilado numa porta dedicada, pede cada página exatamente como um visitante pediria, e salva o HTML resultante em arquivo. Assim o estático é **idêntico** ao que o SSR entregaria — sem risco de divergência. Cada página vira `slug/index.html` (e a `index` vira `/index.html` na raiz), um formato compatível com qualquer host.
+
+### O que é incluído e excluído
+
+O site estático inclui todo o conteúdo de `dist/client` e `public/` (suas páginas, uploads, e bibliotecas de `vendor/`). São **excluídos** automaticamente os recursos que pertencem apenas à interface do editor: a rota `/editor`, e as imagens `glv.png`, `openmaker.png` e `VisualCMS360header.png`.
+
+### Variáveis de ambiente (opcionais)
+
+| Variável | Padrão | Função |
+|---|---|---|
+| `EXPORT_HOST` | `127.0.0.1` | Host do servidor temporário de exportação |
+| `EXPORT_PORT` | `4477` | Porta dedicada do servidor de exportação (≠ 4321 do editor) |
+| `EXPORT_OUT` | `./dist-static` | Pasta de saída do site estático |
+
+Exemplo com porta alternativa (caso a 4477 esteja ocupada):
+
+```bash
+EXPORT_PORT=4488 npm run export:static
+```
+
+> **Por que uma porta dedicada?** O export precisa renderizar contra o servidor de **produção** (assets reais em `/_astro`). Reaproveitar o `astro dev` da porta 4321 faria o HTML apontar para URLs de desenvolvimento (`/@vite/…`) que não existem no site estático.
 
 ---
 
