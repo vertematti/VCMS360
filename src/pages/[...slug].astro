@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import * as cheerio from 'cheerio';
 import Layout from '../layouts/Layout.astro';
+import { loadSiteConfig, resolveSeo } from '../lib/seo';
 
 export const prerender = false;
 
@@ -91,9 +92,12 @@ if (finalJquery.trim()) {
   combinedScript += '  console.warn("[VisualCMS360] jQuery não encontrado — código jQuery dos componentes não executado.");\n';
   combinedScript += '}\n';
 }
+// Resolver SEO: cascata página → site.json → fallback
+const siteConfig = await loadSiteConfig();
+const seo = resolveSeo(pageData.seo || {}, siteConfig, slug);
 ---
 
-<Layout>
+<Layout lang={seo.lang} seoTags={seo.tags}>
   <!-- CSS from GrapesJS — is:global para evitar scoping do Astro -->
   <!-- Necessário para position:sticky, position:fixed funcionarem -->
   <style is:global set:html={finalCss}></style>

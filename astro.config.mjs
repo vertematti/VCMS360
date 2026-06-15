@@ -7,6 +7,12 @@ import node from '@astrojs/node';
 
 // https://astro.build/config
 export default defineConfig({
+  // Renomeia o diretório de assets compilados de "_astro" para "assets",
+  // para não expor qual ferramenta gerou o build no site estático publicado.
+  build: {
+    assets: 'assets',
+  },
+
   vite: {
     plugins: [tailwindcss()],
     build: {

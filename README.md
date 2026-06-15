@@ -47,6 +47,7 @@ Gerson é **Educador Maker voluntário** do [Open Maker](https://www.dispensados
 - **Galeria de Fotos** — lightbox com zoom, pan, fullscreen e suporte mobile-first
 - **Editor de código HTML/CSS/JS/jQuery** — campos separados com syntax highlight e indentação automática; o código jQuery é agregado e envolvido em `$(function(){ ... })` automaticamente nas páginas publicadas
 - **Editor de classes CSS** — renomeação e edição de propriedades direto no Style Manager, com detecção de classes Tailwind
+- **SEO completo** — metadados por página (title, description, Open Graph, Twitter Cards, JSON-LD) com preview ao vivo, configuração global do site em cascata, e geração de `sitemap.xml`/`robots.txt` no build estático
 - **Build & publicação** — compilação SSR (`npm run build`) e exportação de site estático sem Node (`npm run export:static`) para qualquer host
 - **Exportar/Importar** — backup e restauração seletiva de páginas e componentes em arquivo ZIP, com detecção de conflitos
 - **Multi-página** — suporte a múltiplas páginas por projeto
@@ -111,7 +112,9 @@ O exportador **não reimplementa** a renderização. Ele sobe internamente o ser
 
 ### O que é incluído e excluído
 
-O site estático inclui todo o conteúdo de `dist/client` e `public/` (suas páginas, uploads, e bibliotecas de `vendor/`). São **excluídos** automaticamente os recursos que pertencem apenas à interface do editor: a rota `/editor`, e as imagens `glv.png`, `openmaker.png` e `VisualCMS360header.png`.
+O site estático inclui todo o conteúdo de `dist/client` e `public/` (suas páginas, uploads, e bibliotecas de `vendor/`). São **excluídos** automaticamente os recursos que pertencem apenas à interface do editor: a rota `/editor`, os scripts do editor em `js/` (`editor-main.js` e `components-main.js`, que as páginas publicadas nunca carregam), e as imagens `glv.png`, `openmaker.png` e `VisualCMS360header.png`.
+
+Quando o **domínio base** está configurado em SEO → Configurações do Site, o exportador também gera **`sitemap.xml`** e **`robots.txt`** na raiz do site estático.
 
 ### Variáveis de ambiente (opcionais)
 
@@ -127,7 +130,7 @@ Exemplo com porta alternativa (caso a 4477 esteja ocupada):
 EXPORT_PORT=4488 npm run export:static
 ```
 
-> **Por que uma porta dedicada?** O export precisa renderizar contra o servidor de **produção** (assets reais em `/_astro`). Reaproveitar o `astro dev` da porta 4321 faria o HTML apontar para URLs de desenvolvimento (`/@vite/…`) que não existem no site estático.
+> **Por que uma porta dedicada?** O export precisa renderizar contra o servidor de **produção** (assets reais em `/assets`). Reaproveitar o `astro dev` da porta 4321 faria o HTML apontar para URLs de desenvolvimento (`/@vite/…`) que não existem no site estático.
 
 ---
 
@@ -155,8 +158,11 @@ VisualCMS360/
 │   └── favicon.svg
 ├── src/
 │   ├── data/                      # Dados persistidos (gravados em runtime)
-│   │   ├── pages.json             # Páginas do site
-│   │   └── components.json        # Componentes compartilhados
+│   │   ├── pages.json             # Páginas do site (inclui campo seo por página)
+│   │   ├── components.json        # Componentes compartilhados
+│   │   └── site.json              # Configuração global de SEO do site
+│   ├── lib/
+│   │   └── seo.ts                 # Resolvedor de SEO (cascata + tags <head>)
 │   ├── layouts/
 │   │   └── Layout.astro           # Layout base (Tour Virtual + Galeria + FA/jQuery)
 │   ├── styles/
@@ -174,6 +180,7 @@ VisualCMS360/
 │       │   ├── import.ts          # Importar projeto (ZIP)
 │       │   ├── reset.ts           # Resetar páginas/componentes
 │       │   ├── events.ts          # Server-Sent Events (sync em tempo real)
+│       │   ├── site.ts            # Carregar/salvar configuração global de SEO
 │       │   ├── assets/            # Upload e listagem de imagens
 │       │   │   ├── upload.ts
 │       │   │   └── load.ts
@@ -252,6 +259,49 @@ Texto completo em: [LICENSE](./LICENSE) · [gnu.org/licenses/gpl-3.0](https://ww
 ### Dependências de Terceiros
 
 Todas as atribuições estão documentadas em **[NOTICE](./NOTICE)**.
+
+---
+
+## 🔍 SEO
+
+O Visual CMS 360° inclui um sistema de SEO em três níveis (por página, redes sociais e técnico), acessível pelo botão de **lupa 🔍** na barra de ferramentas do editor de páginas — posicionado ao lado do botão de importar projeto. O botão abre um modal organizado em três abas: **Página**, **Código (JSON-LD / Head)** e **Configurações do Site**.
+
+### Aba "Página" — busca e redes sociais
+
+Os metadados específicos de cada página são editados em formulário, com pré-visualização ao vivo de como o resultado aparece no Google e nas redes sociais:
+
+- **Busca (Google)**: título, descrição, robots (index/noindex/nofollow) e URL canônica. Os campos de título e descrição têm **contador de caracteres** com indicação visual da faixa ideal (verde = bom, amarelo = curto, vermelho = longo) e um **preview do snippet do Google** atualizado em tempo real.
+- **Redes sociais (Open Graph)**: `og:title`, `og:description`, `og:image`, `og:type` e `twitter:card`, com **preview de card social** mostrando como o link aparece ao ser compartilhado.
+
+### Aba "Código (JSON-LD / Head)" — uso avançado
+
+Para quem precisa de controle fino:
+
+- **JSON-LD** — bloco de dados estruturados schema.org da página, injetado em `<script type="application/ld+json">`.
+- **Tags `<head>` avulsas** — HTML extra inserido no `<head>` (verificação de domínio, meta tags customizadas, etc.).
+
+### Aba "Configurações do Site" — global
+
+Valores globais herdados por todas as páginas: nome do site, domínio base (`baseUrl`), título padrão, **template de título** (ex.: `%s — Meu Site`), descrição padrão, imagem OG padrão, idioma (`lang`), autor, handle do Twitter, robots padrão e dados de **organização** (nome, logo, redes sociais) usados no JSON-LD global.
+
+### Cascata e fluxo de salvamento
+
+**Cascata:** qualquer campo deixado em branco numa página herda automaticamente o valor global definido em Configurações do Site. Isso evita repetição e garante defaults consistentes em todo o site.
+
+O SEO da página fica **pendente** ao clicar em *Aplicar SEO da página*, sendo persistido somente quando você **salva a página** (mesmo botão de salvar do conteúdo). Já a configuração global é gravada imediatamente pelo botão *Salvar config do site*.
+
+### Domínio base e URLs
+
+A **URL canônica** e a `og:url` são absolutas e dependem do **Domínio base** (`baseUrl`) configurado globalmente. Enquanto ele estiver vazio, essas tags são omitidas (em vez de gerar URLs quebradas), já que o site estático é portável e pode ser publicado em qualquer host. Imagens OG relativas (ex.: `/uploads/og.jpg`) também são convertidas em URLs absolutas quando o domínio está definido. Defina o domínio antes de publicar.
+
+### Sitemap e robots.txt
+
+Ao rodar `npm run export:static`, se o domínio base estiver configurado, são gerados automaticamente:
+
+- **`sitemap.xml`** — lista todas as páginas (exceto as marcadas como `noindex`)
+- **`robots.txt`** — com a referência ao sitemap
+
+Os dados são persistidos em `src/data/site.json` (global) e no campo `seo` de cada página em `src/data/pages.json`. Toda a resolução da cascata e a montagem das tags `<head>` ficam centralizadas em `src/lib/seo.ts`, reutilizado tanto na renderização SSR quanto na geração estática. As configurações de SEO são incluídas no backup ao exportar o projeto em ZIP.
 
 ---
 

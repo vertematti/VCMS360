@@ -3,7 +3,7 @@
 //
 // Endpoint do botão "Build" do editor.
 // Encadeia, transmitindo a saída em tempo real (SSE) para o modal:
-//   1. `npm run build`          → regenera dist/ (assets /_astro, CSS Tailwind)
+//   1. `npm run build`          → regenera dist/ (assets /assets, CSS Tailwind)
 //   2. `npm run export:static`  → gera ./dist-static (HTML puro + assets)
 // O resultado em dist-static/ pode ser servido por qualquer servidor estático
 // (Apache, Nginx, etc.) sem Node.

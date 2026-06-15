@@ -2,14 +2,22 @@
 // Visual CMS 360° — Copyright (C) 2025 Gerson Luis Vertematti
 // GNU GPL v3 — https://www.gnu.org/licenses/gpl-3.0.html
 import '../styles/global.css';
+
+interface Props {
+  lang?: string;
+  seoTags?: string;   // bloco HTML de <meta>/<title>/JSON-LD já resolvido
+}
+const { lang = 'pt-BR', seoTags = '' } = Astro.props;
 ---
 
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang={lang}>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visual CMS</title>
+  {seoTags
+    ? <Fragment set:html={seoTags} />
+    : <title>Visual CMS</title>}
   <!-- Font Awesome local -->
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
   <!-- jQuery local -->

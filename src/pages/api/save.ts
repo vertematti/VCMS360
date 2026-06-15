@@ -29,6 +29,7 @@ export const POST: APIRoute = async ({ request }) => {
       css: data.css || '',
       js: data.js || '',
       jquery: data.jquery || '',
+      seo: data.seo || {},
       projectData: data.projectData || {}
     };
 

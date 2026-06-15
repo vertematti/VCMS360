@@ -35,7 +35,7 @@ const ROOT         = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 const HOST         = process.env.EXPORT_HOST || '127.0.0.1';
 // Porta DEDICADA (não a 4321 do editor): o export precisa renderizar contra o
 // servidor de PRODUÇÃO recém-buildado, para o HTML referenciar os assets reais
-// de /_astro. Se reaproveitasse um `astro dev` na 4321, o HTML sairia apontando
+// de /assets. Se reaproveitasse um `astro dev` na 4321, o HTML sairia apontando
 // para URLs de desenvolvimento (/@vite/…) que não existem no estático.
 const PORT         = process.env.EXPORT_PORT || '4477';
 const BASE         = `http://${HOST}:${PORT}`;
@@ -44,6 +44,7 @@ const SERVER_ENTRY = path.join(ROOT, 'dist', 'server', 'entry.mjs');
 const CLIENT_DIR   = path.join(ROOT, 'dist', 'client');
 const PUBLIC_DIR   = path.join(ROOT, 'public');
 const PAGES_JSON   = path.join(ROOT, 'src', 'data', 'pages.json');
+const SITE_JSON    = path.join(ROOT, 'src', 'data', 'site.json');
 
 // Recursos que existem só na interface do editor e NÃO devem ir para o site
 // estático publicado. Caminhos relativos à raiz do build (dist-static/).
@@ -53,6 +54,7 @@ const EXCLUDE = [
   'openmaker.png',
   'VisualCMS360header.png',
   'editor',   // interface do editor — depende de Node/API, não vai no site estático
+  'js',       // scripts do editor (editor-main.js, components-main.js) — usados só pelo editor, não pelas páginas publicadas
 ];
 
 const log = (...a) => console.log('[export]', ...a);
@@ -85,10 +87,10 @@ async function main() {
   }
 
   // 2. Descobrir as páginas publicadas a partir do pages.json
-  let slugs;
+  let slugs, pagesData = {};
   try {
-    const pages = JSON.parse(await fs.readFile(PAGES_JSON, 'utf-8'));
-    slugs = Object.keys(pages);
+    pagesData = JSON.parse(await fs.readFile(PAGES_JSON, 'utf-8'));
+    slugs = Object.keys(pagesData);
   } catch (e) {
     console.error('[export] ERRO ao ler pages.json:', e.message);
     process.exit(1);
@@ -101,7 +103,7 @@ async function main() {
 
   // 3. Subir SEMPRE um servidor de produção próprio nesta porta dedicada.
   //    (Não reaproveitamos servidores existentes para garantir que o HTML
-  //    aponte para os assets de produção /_astro, e não os de dev.)
+  //    aponte para os assets de produção /assets, e não os de dev.)
   let child = null;
   {
     // Aviso se a porta já estiver ocupada por outra coisa
@@ -142,7 +144,7 @@ async function main() {
     await fs.rm(OUT, { recursive: true, force: true });
     await fs.mkdir(OUT, { recursive: true });
 
-    // 4a. Copiar os assets já buildados (inclui /_astro e o snapshot do public)
+    // 4a. Copiar os assets já buildados (inclui /assets e o snapshot do public)
     log('Copiando assets de dist/client…');
     await fs.cp(CLIENT_DIR, OUT, { recursive: true });
 
@@ -189,6 +191,41 @@ async function main() {
 
     log('');
     log(`Concluído: ${ok} página(s) exportada(s), ${fail} falha(s).`);
+
+    // 6. Gerar sitemap.xml e robots.txt (SEO técnico — Nível 3)
+    //    Lê site.json para baseUrl e respeita robots "noindex" por página.
+    try {
+      let site = {};
+      try { site = JSON.parse(await fs.readFile(SITE_JSON, 'utf-8')); } catch {}
+      const baseUrl = (site.baseUrl || '').replace(/\/+$/, '');
+
+      if (baseUrl) {
+        const robotsDefault = site.robotsDefault || 'index,follow';
+        const urls = slugs.filter(slug => {
+          const pageRobots = (pagesData[slug]?.seo?.robots) || robotsDefault;
+          return !/noindex/i.test(pageRobots);   // não lista páginas noindex
+        }).map(slug => {
+          const loc = slug === 'index' ? baseUrl + '/' : `${baseUrl}/${slug}`;
+          return `  <url><loc>${loc}</loc></url>`;
+        });
+
+        const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n`
+          + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`
+          + urls.join('\n') + `\n</urlset>\n`;
+        await fs.writeFile(path.join(OUT, 'sitemap.xml'), sitemap, 'utf-8');
+        log(`  ✓ sitemap.xml (${urls.length} URL(s))`);
+
+        const robotsTxt = `User-agent: *\nAllow: /\n\nSitemap: ${baseUrl}/sitemap.xml\n`;
+        await fs.writeFile(path.join(OUT, 'robots.txt'), robotsTxt, 'utf-8');
+        log('  ✓ robots.txt');
+      } else {
+        log('  ⚠ sitemap.xml/robots.txt não gerados (defina o "Domínio base" em SEO → Configurações do Site).');
+      }
+    } catch (e) {
+      console.error('[export]   ✗ Falha ao gerar sitemap/robots:', e.message);
+    }
+
+    log('');
     log(`Saída: ${OUT}`);
     log('Suba o conteúdo dessa pasta em qualquer servidor estático.');
     if (fail > 0) process.exitCode = 1;

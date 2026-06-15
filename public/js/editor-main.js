@@ -455,14 +455,14 @@
 
       // Telas: lista, editar cena, picker de imagem, hotspot editor
       const wrap = document.createElement('div');
-      wrap.style.cssText = 'font-family:sans-serif;color:#ccc;width:820px;max-width:92vw;box-sizing:border-box;';
+      wrap.style.cssText = 'font-family:sans-serif;color:#ccc;width:100%;max-width:100%;box-sizing:border-box;overflow-x:hidden;';
 
-      const screenList    = document.createElement('div'); screenList.style.cssText    = 'padding:14px;';
-      const screenScene   = document.createElement('div'); screenScene.style.cssText   = 'padding:14px;display:none;';
-      const screenPicker  = document.createElement('div'); screenPicker.style.cssText  = 'padding:14px;display:none;';
-      const screenHotspot = document.createElement('div'); screenHotspot.style.cssText = 'padding:14px;display:none;';
-      const screenNorth   = document.createElement('div'); screenNorth.style.cssText   = 'padding:14px;display:none;';
-      const screenView    = document.createElement('div'); screenView.style.cssText    = 'padding:14px;display:none;';
+      const screenList    = document.createElement('div'); screenList.style.cssText    = 'padding:14px;box-sizing:border-box;';
+      const screenScene   = document.createElement('div'); screenScene.style.cssText   = 'padding:14px;box-sizing:border-box;display:none;';
+      const screenPicker  = document.createElement('div'); screenPicker.style.cssText  = 'padding:14px;box-sizing:border-box;display:none;';
+      const screenHotspot = document.createElement('div'); screenHotspot.style.cssText = 'padding:14px;box-sizing:border-box;display:none;';
+      const screenNorth   = document.createElement('div'); screenNorth.style.cssText   = 'padding:14px;box-sizing:border-box;display:none;';
+      const screenView    = document.createElement('div'); screenView.style.cssText    = 'padding:14px;box-sizing:border-box;display:none;';
 
       wrap.appendChild(screenList);
       wrap.appendChild(screenScene);
@@ -2632,11 +2632,13 @@
           css: editor.getCss(),
           js: (editor._pendingPageJs !== undefined ? editor._pendingPageJs : (currentPageData?.js || '')),
           jquery: (editor._pendingPageJquery !== undefined ? editor._pendingPageJquery : (currentPageData?.jquery || '')),
+          seo: (editor._pendingPageSeo !== undefined ? editor._pendingPageSeo : (currentPageData?.seo || {})),
           projectData: editor.getProjectData()
         };
         // limpar pendências após montar payload
         delete editor._pendingPageJs;
         delete editor._pendingPageJquery;
+        delete editor._pendingPageSeo;
         const res = await fetch('/api/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2814,6 +2816,27 @@
       }}
     }]);
 
+    // ── Botão SEO (ao lado do Importar Projeto) ──────────────────────────────
+    if (!document.getElementById('cms-seo-btn-style')) {
+      const sbs = document.createElement('style');
+      sbs.id = 'cms-seo-btn-style';
+      sbs.textContent = `
+        .cms-seo-btn { color: #34d399 !important; }
+        .cms-seo-btn:hover, .cms-seo-btn.gjs-pn-active { color: #6ee7b7 !important; background: rgba(52,211,153,0.12) !important; }
+      `;
+      document.head.appendChild(sbs);
+    }
+    editor.Panels.addButton('options', [{
+      id:        'cms-seo',
+      label:     '<span style="font-size:15px;line-height:1;vertical-align:middle;">🔍</span>',
+      className: 'gjs-pn-btn cms-seo-btn',
+      attributes: { title: 'SEO da página e configurações do site' },
+      command: { run: (ed, sender) => {
+        sender && sender.set('active', 0);
+        ed.runCommand('cms-open-seo');
+      }}
+    }]);
+
     editor.Panels.addButton('options', [{
       id:        'gallery-manage',
       label:     '🖼️',
@@ -2929,6 +2952,278 @@
         active: false,
       }
     ]);
+
+
+    // ── Comando: Modal de SEO (formulário + previews + config global) ─────────
+    editor.Commands.add('cms-open-seo', {
+      run: async function(ed) {
+        function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        if (!document.getElementById('cms-seo-styles')) {
+          const st = document.createElement('style');
+          st.id = 'cms-seo-styles';
+          st.textContent = `
+            .cms-seo-btn { color: #34d399 !important; }
+            .cms-seo-btn:hover, .cms-seo-btn.gjs-pn-active { color: #6ee7b7 !important; background: rgba(52,211,153,0.12) !important; }
+            #cms-seo-wrap { display:flex; flex-direction:column; height:calc(90vh - 56px); overflow:hidden; color:#e2e4ef; font-family:sans-serif; }
+            #cms-seo-wrap .cms-seo-body { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:14px; }
+            #cms-seo-wrap h3 { margin:0 0 4px; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:#34d399; }
+            #cms-seo-wrap label { display:block; font-size:12px; color:#9ca3af; margin:8px 0 3px; }
+            #cms-seo-wrap input[type=text], #cms-seo-wrap textarea, #cms-seo-wrap select {
+              width:100%; box-sizing:border-box; background:#13131f; color:#e2e4ef; border:1px solid #444;
+              border-radius:5px; padding:7px 9px; font-size:13px; font-family:inherit; }
+            #cms-seo-wrap textarea { resize:vertical; min-height:54px; }
+            .cms-seo-row { display:flex; gap:10px; } .cms-seo-row > div { flex:1; }
+            .cms-seo-count { font-size:11px; float:right; }
+            .cms-seo-count.ok { color:#34d399; } .cms-seo-count.warn { color:#fbbf24; } .cms-seo-count.bad { color:#f87171; }
+            .cms-seo-section { border:1px solid #333; border-radius:8px; padding:12px; background:#1a1a2e; }
+            .cms-gprev { background:#fff; border-radius:8px; padding:12px 14px; margin-top:6px; }
+            .cms-gprev .u { color:#202124; font-size:12px; }
+            .cms-gprev .t { color:#1a0dab; font-size:18px; line-height:1.3; margin:2px 0; }
+            .cms-gprev .d { color:#4d5156; font-size:13px; line-height:1.4; }
+            .cms-social { border:1px solid #dadde1; border-radius:8px; overflow:hidden; margin-top:6px; background:#fff; max-width:420px; }
+            .cms-social .img { background:#e4e6eb; height:160px; display:flex; align-items:center; justify-content:center; color:#8a8d91; font-size:12px; background-size:cover; background-position:center; }
+            .cms-social .meta { padding:8px 12px; } .cms-social .dom { color:#606770; font-size:11px; text-transform:uppercase; }
+            .cms-social .st { color:#1d2129; font-size:15px; font-weight:600; } .cms-social .sd { color:#606770; font-size:13px; }
+            #cms-seo-wrap .cms-seo-tabs { display:flex; gap:6px; border-bottom:1px solid #2a2a3a; padding:14px 14px 0; flex-shrink:0; }
+            #cms-seo-wrap .cms-seo-tab { padding:7px 14px; cursor:pointer; font-size:13px; font-weight:600; color:#9ca3af; border-bottom:2px solid transparent; }
+            #cms-seo-wrap .cms-seo-tab.active { color:#34d399; border-bottom-color:#34d399; }
+            .cms-seo-pane { display:none; } .cms-seo-pane.active { display:block; }
+            #cms-seo-wrap .cms-seo-actions { display:flex; justify-content:flex-end; gap:8px; padding:12px 14px; flex-wrap:wrap; flex-shrink:0; border-top:1px solid rgba(255,255,255,0.08); background:transparent; }
+            #cms-seo-wrap button.primary { background:#10b981; color:#fff; border:none; border-radius:6px; padding:9px 20px; cursor:pointer; font-size:13px; font-weight:600; }
+            #cms-seo-wrap button.ghost { background:transparent; color:#9ca3af; border:1px solid #3a3a4a; border-radius:6px; padding:9px 16px; cursor:pointer; font-size:13px; }
+            .cms-seo-hint { font-size:11px; color:#6b7280; margin-top:3px; }
+          `;
+          document.head.appendChild(st);
+        }
+
+        let site = {};
+        try { site = await (await fetch('/api/site')).json(); } catch(e) {}
+        const pageSeo = (editor._pendingPageSeo !== undefined
+          ? editor._pendingPageSeo
+          : (currentPageData && currentPageData.seo) || {}) || {};
+
+        const v = (o, k) => (o && o[k] != null ? String(o[k]) : '');
+        const baseHost = (site.baseUrl || 'exemplo.com').replace(/^https?:\/\//,'').replace(/\/+$/,'');
+        const orgObj = site.organization || {};
+
+        const wrap = document.createElement('div');
+        wrap.id = 'cms-seo-wrap';
+        wrap.innerHTML = `
+          <div class="cms-seo-tabs">
+            <div class="cms-seo-tab active" data-tab="page">Página</div>
+            <div class="cms-seo-tab" data-tab="code">Código (JSON-LD / Head)</div>
+            <div class="cms-seo-tab" data-tab="site">Configurações do Site</div>
+          </div>
+          <div class="cms-seo-body">
+          <div class="cms-seo-pane active" data-pane="page">
+            <div class="cms-seo-section">
+              <h3>Busca (Google)</h3>
+              <label>Título <span id="seo-c-title" class="cms-seo-count"></span></label>
+              <input type="text" id="seo-title" value="${esc(v(pageSeo,'title'))}" placeholder="${esc(site.defaultTitle||'Título da página')}">
+              <label>Descrição <span id="seo-c-desc" class="cms-seo-count"></span></label>
+              <textarea id="seo-description" placeholder="${esc(site.defaultDescription||'Resumo da página (150-160 caracteres)')}">${esc(v(pageSeo,'description'))}</textarea>
+              <div class="cms-seo-row">
+                <div><label>Robots</label>
+                  <select id="seo-robots">
+                    <option value="">(padrão: ${esc(site.robotsDefault||'index,follow')})</option>
+                    <option value="index,follow">index, follow</option>
+                    <option value="noindex,follow">noindex, follow</option>
+                    <option value="index,nofollow">index, nofollow</option>
+                    <option value="noindex,nofollow">noindex, nofollow</option>
+                  </select>
+                </div>
+                <div><label>URL canônica (opcional)</label>
+                  <input type="text" id="seo-canonical" value="${esc(v(pageSeo,'canonical'))}" placeholder="${site.baseUrl ? esc(site.baseUrl) : 'defina o domínio em Configurações'}">
+                </div>
+              </div>
+              <div class="cms-gprev">
+                <div class="u" id="gp-url">${esc(baseHost)} &rsaquo; ${esc(currentSlug)}</div>
+                <div class="t" id="gp-title">&mdash;</div>
+                <div class="d" id="gp-desc">&mdash;</div>
+              </div>
+            </div>
+            <div class="cms-seo-section" style="margin-top:12px;">
+              <h3>Redes sociais (Open Graph)</h3>
+              <div class="cms-seo-row">
+                <div><label>og:title</label><input type="text" id="seo-ogTitle" value="${esc(v(pageSeo,'ogTitle'))}" placeholder="(usa o título acima)"></div>
+                <div><label>og:type</label>
+                  <select id="seo-ogType">
+                    <option value="website">website</option>
+                    <option value="article">article</option>
+                    <option value="profile">profile</option>
+                  </select>
+                </div>
+              </div>
+              <label>og:description</label>
+              <textarea id="seo-ogDescription" placeholder="(usa a descrição acima)">${esc(v(pageSeo,'ogDescription'))}</textarea>
+              <label>og:image (URL ou /uploads/...)</label>
+              <input type="text" id="seo-ogImage" value="${esc(v(pageSeo,'ogImage'))}" placeholder="${esc(site.defaultOgImage||'/uploads/og-image.jpg')}">
+              <label>twitter:card</label>
+              <select id="seo-twitterCard">
+                <option value="summary_large_image">summary_large_image</option>
+                <option value="summary">summary</option>
+              </select>
+              <div class="cms-social">
+                <div class="img" id="sp-img">imagem de compartilhamento</div>
+                <div class="meta">
+                  <div class="dom">${esc(baseHost)}</div>
+                  <div class="st" id="sp-title">&mdash;</div>
+                  <div class="sd" id="sp-desc">&mdash;</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cms-seo-pane" data-pane="code">
+            <div class="cms-seo-section">
+              <h3>JSON-LD (dados estruturados)</h3>
+              <p class="cms-seo-hint">Schema.org desta página. Cole um objeto JSON-LD valido.</p>
+              <textarea id="seo-jsonLd" style="min-height:120px; font-family:monospace;">${esc(v(pageSeo,'jsonLd'))}</textarea>
+              <h3 style="margin-top:12px;">Tags &lt;head&gt; avulsas</h3>
+              <p class="cms-seo-hint">HTML extra para o &lt;head&gt; (verificacao de dominio, meta customizadas).</p>
+              <textarea id="seo-extraHead" style="min-height:80px; font-family:monospace;">${esc(v(pageSeo,'extraHead'))}</textarea>
+            </div>
+          </div>
+          <div class="cms-seo-pane" data-pane="site">
+            <div class="cms-seo-section">
+              <h3>Configuracao global do site</h3>
+              <p class="cms-seo-hint">Herdado por todas as paginas quando os campos da pagina ficam vazios.</p>
+              <div class="cms-seo-row">
+                <div><label>Nome do site</label><input type="text" id="st-siteName" value="${esc(v(site,'siteName'))}"></div>
+                <div><label>Dominio base (baseUrl)</label><input type="text" id="st-baseUrl" value="${esc(v(site,'baseUrl'))}" placeholder="https://seudominio.com.br"></div>
+              </div>
+              <div class="cms-seo-row">
+                <div><label>Titulo padrao</label><input type="text" id="st-defaultTitle" value="${esc(v(site,'defaultTitle'))}"></div>
+                <div><label>Template de titulo</label><input type="text" id="st-titleTemplate" value="${esc(v(site,'titleTemplate'))}" placeholder="%s — Meu Site"></div>
+              </div>
+              <label>Descricao padrao</label>
+              <textarea id="st-defaultDescription">${esc(v(site,'defaultDescription'))}</textarea>
+              <div class="cms-seo-row">
+                <div><label>Imagem OG padrao</label><input type="text" id="st-defaultOgImage" value="${esc(v(site,'defaultOgImage'))}"></div>
+                <div><label>Idioma (lang)</label><input type="text" id="st-lang" value="${esc(v(site,'lang'))}" placeholder="pt-BR"></div>
+              </div>
+              <div class="cms-seo-row">
+                <div><label>Autor</label><input type="text" id="st-author" value="${esc(v(site,'author'))}"></div>
+                <div><label>Twitter handle</label><input type="text" id="st-twitterHandle" value="${esc(v(site,'twitterHandle'))}" placeholder="@usuario"></div>
+              </div>
+              <label>Robots padrao</label>
+              <input type="text" id="st-robotsDefault" value="${esc(v(site,'robotsDefault'))}" placeholder="index,follow">
+              <h3 style="margin-top:12px;">Organizacao (JSON-LD global)</h3>
+              <div class="cms-seo-row">
+                <div><label>Nome</label><input type="text" id="st-orgName" value="${esc(v(orgObj,'name'))}"></div>
+                <div><label>Logo</label><input type="text" id="st-orgLogo" value="${esc(v(orgObj,'logo'))}"></div>
+              </div>
+              <label>Redes sociais (sameAs, uma URL por linha)</label>
+              <textarea id="st-orgSameAs">${esc((orgObj.sameAs||[]).join('\n'))}</textarea>
+            </div>
+          </div>
+          </div>
+          <div class="cms-seo-actions">
+            <button class="ghost" id="seo-cancel">Cancelar</button>
+            <button class="primary" id="seo-apply">✓ Aplicar SEO da página</button>
+            <button class="primary" id="seo-save-site" style="background:#2563eb;">💾 Salvar config do site</button>
+          </div>
+        `;
+
+        ed.Modal.setTitle('🔍 SEO');
+        ed.Modal.setContent(wrap);
+        ed.Modal.open();
+        setTimeout(()=>{
+          const dlg = document.querySelector('.gjs-mdl-dialog');
+          if (dlg) { dlg.style.width='min(760px,95vw)'; dlg.style.maxHeight='90vh'; dlg.style.height='90vh'; }
+          const cont = document.querySelector('.gjs-mdl-content');
+          if (cont) { cont.style.padding='0'; cont.style.overflow='hidden'; }
+
+          const setSel = (id, val) => { const el = wrap.querySelector(id); if (el && val) el.value = val; };
+          setSel('#seo-robots', v(pageSeo,'robots'));
+          setSel('#seo-ogType', v(pageSeo,'ogType') || 'website');
+          setSel('#seo-twitterCard', v(pageSeo,'twitterCard') || 'summary_large_image');
+
+          wrap.querySelectorAll('.cms-seo-tab').forEach(tab => {
+            tab.onclick = () => {
+              wrap.querySelectorAll('.cms-seo-tab').forEach(t=>t.classList.remove('active'));
+              wrap.querySelectorAll('.cms-seo-pane').forEach(p=>p.classList.remove('active'));
+              tab.classList.add('active');
+              wrap.querySelector('[data-pane="'+tab.dataset.tab+'"]').classList.add('active');
+            };
+          });
+
+          const $ = s => wrap.querySelector(s);
+          function counter(el, val, min, max){
+            const n = (val||'').length;
+            el.textContent = n + ' chars';
+            el.className = 'cms-seo-count ' + (n===0 ? '' : (n>=min && n<=max ? 'ok' : (n<min ? 'warn' : 'bad')));
+          }
+          function upd(){
+            const title = $('#seo-title').value || site.defaultTitle || site.siteName || '';
+            const desc  = $('#seo-description').value || site.defaultDescription || '';
+            const tmpl  = (site.titleTemplate || '%s');
+            const fullTitle = title ? tmpl.replace('%s', title) : (site.siteName||'');
+            $('#gp-title').textContent = fullTitle || '—';
+            $('#gp-desc').textContent  = desc || '—';
+            const ogt = $('#seo-ogTitle').value || title || '—';
+            const ogd = $('#seo-ogDescription').value || desc || '—';
+            $('#sp-title').textContent = ogt;
+            $('#sp-desc').textContent  = ogd;
+            const ogi = $('#seo-ogImage').value || site.defaultOgImage || '';
+            const sp = $('#sp-img');
+            if (ogi) { sp.style.backgroundImage = 'url("'+ogi+'")'; sp.textContent=''; }
+            else { sp.style.backgroundImage=''; sp.textContent='imagem de compartilhamento'; }
+            counter($('#seo-c-title'), $('#seo-title').value, 30, 60);
+            counter($('#seo-c-desc'), $('#seo-description').value, 120, 160);
+          }
+          ['#seo-title','#seo-description','#seo-ogTitle','#seo-ogDescription','#seo-ogImage'].forEach(s=>{
+            const el = $(s); if (el) el.addEventListener('input', upd);
+          });
+          upd();
+
+          $('#seo-apply').onclick = () => {
+            editor._pendingPageSeo = {
+              title: $('#seo-title').value.trim(),
+              description: $('#seo-description').value.trim(),
+              robots: $('#seo-robots').value,
+              canonical: $('#seo-canonical').value.trim(),
+              ogTitle: $('#seo-ogTitle').value.trim(),
+              ogDescription: $('#seo-ogDescription').value.trim(),
+              ogImage: $('#seo-ogImage').value.trim(),
+              ogType: $('#seo-ogType').value,
+              twitterCard: $('#seo-twitterCard').value,
+              jsonLd: $('#seo-jsonLd').value.trim(),
+              extraHead: $('#seo-extraHead').value.trim()
+            };
+            if (typeof showToast === 'function') showToast('SEO aplicado. Salve a página para persistir.', 'success');
+            ed.Modal.close();
+          };
+
+          $('#seo-save-site').onclick = async () => {
+            const payload = {
+              siteName: $('#st-siteName').value.trim(),
+              baseUrl: $('#st-baseUrl').value.trim().replace(/\/+$/,''),
+              defaultTitle: $('#st-defaultTitle').value.trim(),
+              titleTemplate: $('#st-titleTemplate').value.trim() || '%s',
+              defaultDescription: $('#st-defaultDescription').value.trim(),
+              defaultOgImage: $('#st-defaultOgImage').value.trim(),
+              lang: $('#st-lang').value.trim() || 'pt-BR',
+              author: $('#st-author').value.trim(),
+              twitterHandle: $('#st-twitterHandle').value.trim(),
+              robotsDefault: $('#st-robotsDefault').value.trim() || 'index,follow',
+              organization: {
+                name: $('#st-orgName').value.trim(),
+                logo: $('#st-orgLogo').value.trim(),
+                sameAs: $('#st-orgSameAs').value.split('\n').map(s=>s.trim()).filter(Boolean)
+              }
+            };
+            try {
+              const r = await fetch('/api/site', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+              if (r.ok) { site = (await r.json()).site || payload; if (typeof showToast==='function') showToast('Configuração do site salva!', 'success'); upd(); }
+              else if (typeof showToast==='function') showToast('Erro ao salvar config do site.', 'error');
+            } catch(e){ if (typeof showToast==='function') showToast('Erro de rede ao salvar config.', 'error'); }
+          };
+
+          $('#seo-cancel').onclick = () => ed.Modal.close();
+        }, 30);
+      }
+    });
+
 
 
     // ── Botão Sobre (painel lateral) ─────────────────────────────────────────
