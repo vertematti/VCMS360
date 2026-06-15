@@ -20,10 +20,13 @@ export const POST: APIRoute = async () => {
     const summary = { pages: 0, components: 0, uploads: { deleted: 0, failed: 0 } };
 
     // ── 1. Resetar pages.json — apagar TODAS as páginas, manter só index vazia ──
+    // A flag _resetPlaceholder marca esta index como "vazia padrão", para que a
+    // importação de um backup não a trate como conflito real.
     const initialPages = {
       index: {
         html: '<div class="p-8 text-center"><h1 class="text-3xl font-bold mb-4">Start Building</h1><p class="text-gray-600">Drag and drop elements here.</p></div>',
-        css:  ''
+        css:  '',
+        _resetPlaceholder: true
       }
     };
     await fs.writeFile(pagesPath, JSON.stringify(initialPages, null, 2), 'utf-8');

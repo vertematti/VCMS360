@@ -41,7 +41,7 @@ function buildZip(files: { name: string; data: Uint8Array }[]): Uint8Array {
     const local = concat(new Uint8Array([0x50,0x4B,0x03,0x04]),le16(20),le16(0),le16(0),le16(0),le16(0),le32(crc),le32(data.length),le32(data.length),le16(nb.length),le16(0),nb,data);
     entries.push({ name, data, offset, crc }); locals.push(local); offset += local.length;
   }
-  const cd = concat(...entries.map(e => { const nb = u8(e.name); return concat(new Uint8Array([0x50,0x4B,0x01,0x02]),le16(20),le16(20),le16(0),le16(0),le16(0),le16(0),le16(0),le32(e.crc),le32(e.data.length),le32(e.data.length),le16(nb.length),le16(0),le16(0),le16(0),le16(0),le32(0),le32(e.offset),nb); }));
+  const cd = concat(...entries.map(e => { const nb = u8(e.name); return concat(new Uint8Array([0x50,0x4B,0x01,0x02]),le16(20),le16(20),le16(0),le16(0),le16(0),le16(0),le32(e.crc),le32(e.data.length),le32(e.data.length),le16(nb.length),le16(0),le16(0),le16(0),le16(0),le32(0),le32(e.offset),nb); }));
   return concat(...locals, cd, concat(new Uint8Array([0x50,0x4B,0x05,0x06]),le16(0),le16(0),le16(entries.length),le16(entries.length),le32(cd.length),le32(offset),le16(0)));
 }
 

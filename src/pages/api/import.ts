@@ -70,7 +70,12 @@ export const POST: APIRoute = async ({ request, url }) => {
       const existingPages = await readJsonSafe(path.join(cwd, 'src/data/pages.json'));
       const existingComps = await readJsonSafe(path.join(cwd, 'src/data/components.json'));
 
-      const pageConflicts = Object.keys(zipPages).filter(k => k in existingPages);
+      // Páginas marcadas como placeholder do reset não contam como conflito real:
+      // são apenas a "index vazia" que o reset recria. Importar um backup sobre
+      // elas é uma restauração esperada, não uma sobrescrita de conteúdo do usuário.
+      const pageConflicts = Object.keys(zipPages).filter(
+        k => k in existingPages && !existingPages[k]?._resetPlaceholder
+      );
       const compConflicts = Object.keys(zipComps).filter(k => k in existingComps);
 
       return new Response(JSON.stringify({
