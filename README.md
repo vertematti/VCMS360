@@ -136,25 +136,58 @@ EXPORT_PORT=4488 npm run export:static
 ```
 VisualCMS360/
 ├── public/
-│   ├── vendor/              # Bibliotecas JS/CSS de terceiros
-│   ├── js/                  # Scripts principais do editor
-│   │   ├── editor-main.js   # Lógica do editor de páginas
-│   │   └── components-main.js # Lógica do editor de componentes
-│   ├── uploads/             # Imagens enviadas pelo editor (runtime)
-│   └── openmaker.png        # Logo Open Maker
+│   ├── vendor/                    # Bibliotecas de terceiros (offline, sem CDN)
+│   │   ├── grapes.min.js/css      # GrapesJS
+│   │   ├── grapesjs-blocks-basic.min.js
+│   │   ├── grapesjs-tailwind.min.js
+│   │   ├── aframe.min.js          # A-Frame (vídeo 360°)
+│   │   ├── pannellum.min.js/css   # Pannellum (foto 360°)
+│   │   ├── jquery.min.js          # jQuery
+│   │   └── fontawesome/           # Ícones (css/ + webfonts/)
+│   ├── js/
+│   │   ├── editor-main.js         # Lógica do editor de páginas
+│   │   └── components-main.js     # Lógica do editor de componentes
+│   ├── uploads/                   # Imagens enviadas pelo editor (runtime)
+│   ├── glv.png                    # Foto do autor (somente editor)
+│   ├── openmaker.png              # Logo Open Maker (somente editor)
+│   ├── VisualCMS360header.png     # Logo do header (somente editor)
+│   ├── favicon.ico
+│   └── favicon.svg
 ├── src/
+│   ├── data/                      # Dados persistidos (gravados em runtime)
+│   │   ├── pages.json             # Páginas do site
+│   │   └── components.json        # Componentes compartilhados
 │   ├── layouts/
-│   │   └── Layout.astro     # Layout com Tour Virtual e Galeria
+│   │   └── Layout.astro           # Layout base (Tour Virtual + Galeria + FA/jQuery)
+│   ├── styles/
+│   │   └── global.css             # Estilos globais
 │   └── pages/
-│       ├── editor.astro           # Editor de páginas
+│       ├── editor.astro           # Interface do editor de páginas
 │       ├── editor/
-│       │   └── components.astro   # Editor de componentes
-│       ├── api/                   # Endpoints da API (save, load, build, export...)
-│       └── [...slug].astro        # Renderização das páginas editadas
+│       │   └── components.astro   # Interface do editor de componentes
+│       ├── api/                   # Endpoints da API (SSR)
+│       │   ├── save.ts            # Salvar página
+│       │   ├── load.ts            # Carregar página
+│       │   ├── delete.ts          # Excluir página
+│       │   ├── build.ts           # Build do site
+│       │   ├── export.ts          # Exportar projeto (ZIP)
+│       │   ├── import.ts          # Importar projeto (ZIP)
+│       │   ├── reset.ts           # Resetar páginas/componentes
+│       │   ├── events.ts          # Server-Sent Events (sync em tempo real)
+│       │   ├── assets/            # Upload e listagem de imagens
+│       │   │   ├── upload.ts
+│       │   │   └── load.ts
+│       │   └── components/        # API dos componentes
+│       │       ├── save.ts
+│       │       ├── load.ts
+│       │       └── delete.ts
+│       └── [...slug].astro        # Renderização SSR das páginas publicadas
 ├── scripts/
-│   └── copy-vendor.mjs      # Copia vendor files do node_modules
-├── LICENSE                  # GNU GPL v3
-├── NOTICE                   # Atribuições de terceiros
+│   ├── copy-vendor.mjs            # Copia bibliotecas vendor do node_modules
+│   └── export-static.mjs          # Gera site estático em /dist-static
+├── astro.config.mjs               # Configuração do Astro/Vite
+├── LICENSE                        # GNU GPL v3
+├── NOTICE                         # Atribuições de terceiros
 └── package.json
 ```
 
