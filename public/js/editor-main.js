@@ -4185,7 +4185,7 @@
           #imp-apply-btn {
             background:#3b82f6;color:#fff;border:none;border-radius:4px;
             padding:8px 20px;cursor:pointer;font-size:13px;font-weight:600;
-            margin-top:6px; align-self:flex-end; flex-shrink:0;
+            margin-top:4px; align-self:flex-end; flex-shrink:0;
           }
           #imp-apply-btn:hover { background:#2563eb; }
         `;
@@ -4296,8 +4296,8 @@
           const dlg = document.querySelector('.gjs-mdl-dialog');
           if (dlg) {
             dlg.style.width = 'min(900px, 95vw)';
-            dlg.style.maxHeight = '94vh';
-            dlg.style.height = '94vh';
+            dlg.style.maxHeight = '96vh';
+            dlg.style.height = '96vh';
           }
           const cont = document.querySelector('.gjs-mdl-content');
           if (cont) { cont.style.padding = '0'; cont.style.overflow = 'hidden'; }
