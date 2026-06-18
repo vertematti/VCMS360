@@ -1,10 +1,10 @@
 {
   "cabeçalho": {
     "name": "cabeçalho",
-    "html": "<body id=\"ifwj\"><nav id=\"navbar\"></nav><header class=\"text-gray-600 body-font\"><div class=\"container mx-auto flex flex-wrap flex-col md:flex-row items-center pl-3 pr-3\"><img id=\"i5bem\" src=\"/uploads/1781739947514_openmaker.png\"/><div id=\"iw55x\" class=\"pl-0 pr-0 m-0\">Open Maker</div><nav class=\"md:ml-auto flex flex-wrap items-center text-base justify-center\"><a class=\"mr-5 hover:text-gray-900\">Início</a><a class=\"mr-5 hover:text-gray-900\">Quem somos</a><a class=\"mr-5 hover:text-gray-900\">Conteúdos gratuitos</a><a class=\"mr-5 hover:text-gray-900\">Agenda e contatos</a></nav></div></header></body>",
+    "html": "<body id=\"ifwj\"><nav id=\"navbar\">\n</nav><header class=\"text-gray-600 body-font\"><div class=\"container mx-auto flex flex-wrap flex-col md:flex-row items-center p-3 pl-0\"><img id=\"i5bem\" src=\"/uploads/1781739947514_openmaker.png\" class=\"mr-2 ml-2\"/><div id=\"iw55x\">\n      Open Maker\n    </div><nav class=\"md:ml-auto flex flex-wrap items-center text-base justify-center\"><a class=\"mr-5 hover:text-gray-900\">\n        Início\n      </a><a class=\"mr-5 hover:text-gray-900\">\n        Quem somos\n      </a><a class=\"mr-5 hover:text-gray-900\">\n        Conteúdos gratuitos\n      </a><a class=\"mr-5 hover:text-gray-900\">\n        Agenda e contatos\n      </a></nav></div></header></body>",
     "js": "",
     "jquery": "",
-    "css": "* { box-sizing: border-box; } body {margin: 0;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}#navbar{position:sticky;top:0px;z-index:100;background-color:rgba(6, 6, 6, 0.74);}#navbar .nav-inner{max-width:1200px;margin-top:0px;margin-right:auto;margin-bottom:0px;margin-left:auto;padding-top:0px;padding-right:24px;padding-bottom:0px;padding-left:24px;display:flex;align-items:center;justify-content:space-between;height:64px;}#navbar .logo-text{color:rgb(255, 255, 255);font-size:1.25rem;font-weight:700;letter-spacing:0.02em;text-decoration-color:currentcolor;text-decoration-line:none;text-decoration-style:solid;text-decoration-thickness:auto;display:flex;align-items:center;row-gap:10px;column-gap:10px;}#navbar .logo-text i{color:var(--accent);font-size:1.4rem;}#nav-links a{color:rgba(255, 255, 255, 0.82);text-decoration-color:currentcolor;text-decoration-line:none;text-decoration-style:solid;text-decoration-thickness:auto;font-size:0.875rem;font-weight:500;padding-top:6px;padding-right:12px;padding-bottom:6px;padding-left:12px;border-top-left-radius:6px;border-top-right-radius:6px;border-bottom-right-radius:6px;border-bottom-left-radius:6px;transition-property:background, color;transition-duration:0.15s, 0.15s;transition-timing-function:ease, ease;transition-delay:0s, 0s;transition-behavior:normal, normal;}#nav-links a:hover{background-color:rgba(255, 255, 255, 0.12);background-position-x:0%;background-position-y:0%;background-repeat:repeat;background-attachment:scroll;background-image:none;background-size:auto;background-origin:padding-box;background-clip:border-box;color:rgb(255, 255, 255);}.text-gray-600.body-font{background-color:rgba(6, 6, 6, 0.74);position:sticky;z-index:1000;top:0px;}.mr-5.hover\\:text-gray-900{color:rgb(255, 255, 255);}#i5bem{color:black;width:40px;min-height:40px;}#iw55x{padding-top:10px;padding-right:10px;padding-bottom:10px;padding-left:10px;font-family:\"Segoe UI\", system-ui, -apple-system, sans-serif;color:rgb(255, 255, 255);font-size:1.6em;}@media (max-width: 768px){#nav-links.open{display:flex;}}",
+    "css": "* { box-sizing: border-box; } body {margin: 0;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}*{box-sizing:border-box;}#navbar{position:sticky;top:0px;z-index:100;background-color:rgba(6, 6, 6, 0.74);}#navbar .nav-inner{max-width:1200px;margin-top:0px;margin-right:auto;margin-bottom:0px;margin-left:auto;padding-top:0px;padding-right:24px;padding-bottom:0px;padding-left:24px;display:flex;align-items:center;justify-content:space-between;height:64px;}#navbar .logo-text{color:rgb(255, 255, 255);font-size:1.25rem;font-weight:700;letter-spacing:0.02em;text-decoration-color:currentcolor;text-decoration-line:none;text-decoration-style:solid;text-decoration-thickness:auto;display:flex;align-items:center;row-gap:10px;column-gap:10px;}#navbar .logo-text i{color:var(--accent);font-size:1.4rem;}#nav-links a{color:rgba(255, 255, 255, 0.82);text-decoration-color:currentcolor;text-decoration-line:none;text-decoration-style:solid;text-decoration-thickness:auto;font-size:0.875rem;font-weight:500;padding-top:6px;padding-right:12px;padding-bottom:6px;padding-left:12px;border-top-left-radius:6px;border-top-right-radius:6px;border-bottom-right-radius:6px;border-bottom-left-radius:6px;transition-property:background, color;transition-duration:0.15s, 0.15s;transition-timing-function:ease, ease;transition-delay:0s, 0s;transition-behavior:normal, normal;}#nav-links a:hover{background-color:rgba(255, 255, 255, 0.12);background-position-x:0%;background-position-y:0%;background-repeat:repeat;background-attachment:scroll;background-image:none;background-size:auto;background-origin:padding-box;background-clip:border-box;color:rgb(255, 255, 255);}.text-gray-600.body-font{background-color:rgba(6, 6, 6, 0.74);position:sticky;z-index:1000;top:0px;}.mr-5.hover\\:text-gray-900{color:rgb(255, 255, 255);}#i5bem{color:black;width:40px;min-height:40px;}#iw55x{font-family:\"Segoe UI\", system-ui, -apple-system, sans-serif;color:rgb(255, 255, 255);font-size:1.6em;}@media (max-width: 768px){#nav-links.open{display:flex;}}",
     "projectData": {
       "dataSources": [],
       "assets": [
@@ -50,6 +50,13 @@
             "margin-right": "0px",
             "margin-bottom": "0px",
             "margin-left": "0px"
+          }
+        },
+        {
+          "selectors": [],
+          "selectorsAdd": "*",
+          "style": {
+            "box-sizing": "border-box"
           }
         },
         {
@@ -152,25 +159,6 @@
         },
         {
           "selectors": [
-            "nav-inner"
-          ],
-          "style": {
-            "position": "sticky",
-            "z-index": "1000",
-            "background-color": "rgba(0, 0, 0, 0)"
-          }
-        },
-        {
-          "selectors": [],
-          "selectorsAdd": "#nav-links.open",
-          "style": {
-            "display": "flex"
-          },
-          "mediaText": "(max-width: 768px)",
-          "atRuleType": "media"
-        },
-        {
-          "selectors": [
             "text-gray-600",
             "body-font"
           ],
@@ -182,19 +170,8 @@
           }
         },
         {
-          "selectors": [
-            "mr-5",
-            "hover:text-gray-900"
-          ],
-          "style": {
-            "color": "rgb(255, 255, 255)"
-          }
-        },
-        {
-          "selectors": [
-            "ml-3",
-            "text-xl"
-          ],
+          "selectors": [],
+          "selectorsAdd": ".mr-5.hover\\:text-gray-900",
           "style": {
             "color": "rgb(255, 255, 255)"
           }
@@ -211,36 +188,22 @@
         },
         {
           "selectors": [
-            "ml-3",
-            "text-2xl"
-          ],
-          "style": {
-            "color": "rgb(255, 255, 255)",
-            "font-weight": "700"
-          }
-        },
-        {
-          "selectors": [
-            "text-2xl"
-          ],
-          "style": {
-            "color": "rgb(255, 255, 255)",
-            "font-weight": "700"
-          }
-        },
-        {
-          "selectors": [
             "#iw55x"
           ],
           "style": {
-            "padding-top": "10px",
-            "padding-right": "10px",
-            "padding-bottom": "10px",
-            "padding-left": "10px",
             "font-family": "\"Segoe UI\", system-ui, -apple-system, sans-serif",
             "color": "rgb(255, 255, 255)",
             "font-size": "1.6em"
           }
+        },
+        {
+          "selectors": [],
+          "selectorsAdd": "#nav-links.open",
+          "style": {
+            "display": "flex"
+          },
+          "mediaText": "(max-width: 768px)",
+          "atRuleType": "media"
         }
       ],
       "pages": [
@@ -264,9 +227,16 @@
                 "components": [
                   {
                     "tagName": "nav",
+                    "type": "text",
                     "attributes": {
                       "id": "navbar"
-                    }
+                    },
+                    "components": [
+                      {
+                        "type": "textnode",
+                        "content": "\n"
+                      }
+                    ]
                   },
                   {
                     "tagName": "header",
@@ -284,8 +254,8 @@
                           "flex-col",
                           "md:flex-row",
                           "items-center",
-                          "pl-3",
-                          "pr-3"
+                          "p-3",
+                          "pl-0"
                         ],
                         "components": [
                           {
@@ -293,6 +263,10 @@
                             "resizable": {
                               "ratioDefault": 1
                             },
+                            "classes": [
+                              "mr-2",
+                              "ml-2"
+                            ],
                             "attributes": {
                               "id": "i5bem",
                               "src": "/uploads/1781739947514_openmaker.png"
@@ -300,18 +274,13 @@
                           },
                           {
                             "type": "text",
-                            "classes": [
-                              "pl-0",
-                              "pr-0",
-                              "m-0"
-                            ],
                             "attributes": {
                               "id": "iw55x"
                             },
                             "components": [
                               {
                                 "type": "textnode",
-                                "content": "Open Maker"
+                                "content": "\n      Open Maker\n    "
                               }
                             ]
                           },
@@ -335,7 +304,7 @@
                                 "components": [
                                   {
                                     "type": "textnode",
-                                    "content": "Início"
+                                    "content": "\n        Início\n      "
                                   }
                                 ]
                               },
@@ -348,7 +317,7 @@
                                 "components": [
                                   {
                                     "type": "textnode",
-                                    "content": "Quem somos"
+                                    "content": "\n        Quem somos\n      "
                                   }
                                 ]
                               },
@@ -361,7 +330,7 @@
                                 "components": [
                                   {
                                     "type": "textnode",
-                                    "content": "Conteúdos gratuitos"
+                                    "content": "\n        Conteúdos gratuitos\n      "
                                   }
                                 ]
                               },
@@ -374,7 +343,7 @@
                                 "components": [
                                   {
                                     "type": "textnode",
-                                    "content": "Agenda e contatos"
+                                    "content": "\n        Agenda e contatos\n      "
                                   }
                                 ]
                               }
@@ -401,7 +370,7 @@
       ],
       "symbols": []
     },
-    "updatedAt": "2026-06-18T03:17:22.552Z"
+    "updatedAt": "2026-06-18T03:39:30.417Z"
   },
   "rodapé": {
     "name": "rodapé",
