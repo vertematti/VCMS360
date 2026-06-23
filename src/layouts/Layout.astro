@@ -623,14 +623,8 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
     })();
   </script>
 
-  <!-- ════════════════════════════════════════════════════════════════
-       Virtual Tour 360 — Runtime público
-       • Foto 360°  → Pannellum
-       • Vídeo 360° → A-Frame
-       • Hotspot video-flat  → tooltip nativo Pannellum
-       • Hotspot video-modal → modal overlay com player completo
-       • Hotspot video-wall  → vídeo em plano 3D com perspectiva (A-Frame overlay)
-  ═════════════════════════════════════════════════════════════════ -->
+  <!-- Virtual Tour 360 — Runtime público. Foto 360°: Pannellum; Vídeo 360°: A-Frame. -->
+  <!-- Hotspots: video-flat (tooltip nativo Pannellum), video-modal (overlay com player completo), video-wall (vídeo em plano 3D via A-Frame overlay). -->
   <link rel="stylesheet" href="/vendor/pannellum.min.css" />
   <script is:inline src="/vendor/pannellum.min.js"></script>
   <!-- A-Frame: carregado apenas do vendor local (copiado pelo npm install) -->
