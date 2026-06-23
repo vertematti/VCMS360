@@ -29,7 +29,7 @@
     "tailwindcss": "^4.2.4"
   },
   "allowScripts": {
-    "esbuild@0.27.7": true,
-    "sharp@0.34.5": true
+    "sharp@0.34.5": true,
+    "esbuild@0.28.1": true
   }
 }
