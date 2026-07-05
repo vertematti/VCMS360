@@ -1068,10 +1068,14 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
       text-overflow:ellipsis; pointer-events:none;
     }
 
-    /* Overlay de título/descrição da cena — box pill no canto inferior esquerdo */
+    /* Overlay de título/descrição da cena — box pill no canto inferior esquerdo.
+       Compartilhado pelas cenas de imagem (Pannellum) e de vídeo 360 (A-Frame). */
     .vt-scene-info {
       position: absolute;
-      bottom: 90px;   /* acima da barra de miniaturas (~84px) + margem */
+      /* Folga vertical até as miniaturas = folga horizontal até a borda (left:10px).
+         Miniaturas visíveis começam a 60px da base (10px pad + 50px thumb);
+         +10px de respiro → bottom:70px, deixando a mesma distância dos dois lados. */
+      bottom: 70px;
       left: 10px;     /* alinhado ao padding-left dos thumbnails */
       background: rgba(0,0,0,0.62);
       color: #fff;
