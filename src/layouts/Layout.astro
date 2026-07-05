@@ -56,6 +56,16 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
     }
     #glb-zoom-area.dragging { cursor: grabbing; }
     #glb-zoom-area.zoomed  { cursor: grab; }
+    /* Ao dar zoom (fora do fullscreen), o palco expande para cobrir TODA a área
+       (igual ao fullscreen) — a imagem ampliada usa a tela inteira e o pan fica
+       livre, sem aquela borda entre o palco e a borda da tela. */
+    #glb-zoom-area.glb-zoom-expanded {
+      position: absolute; inset: 0;
+      width: auto; height: auto;
+      max-width: none; max-height: none;
+      box-shadow: none; border-radius: 0;
+      background: transparent;
+    }
     #gallery-lightbox img {
       display: block;
       max-width: 88vw; max-height: 85vh;
@@ -251,6 +261,8 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
         img.style.transform = `scale(${_scale}) translate(${_panX / _scale}px, ${_panY / _scale}px)`;
         const za = zoomArea();
         za.classList.toggle('zoomed', _scale > 1);
+        /* Palco expandido só fora do fullscreen (no fullscreen o palco já é a tela) */
+        za.classList.toggle('glb-zoom-expanded', _scale > 1 && !isGlbFullscreen());
         const zlEl = zoomLevel();
         if (_scale > 1) {
           zlEl.style.display = 'block';
@@ -289,8 +301,17 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
           _panX = Math.max(-maxPanX, Math.min(maxPanX, _panX));
           _panY = Math.max(-maxPanY, Math.min(maxPanY, _panY));
         } else {
-          const maxPanX = (za.clientWidth  * (_scale - 1)) / 2;
-          const maxPanY = (za.clientHeight * (_scale - 1)) / 2;
+          /* Fora do fullscreen: garante o palco expandido antes de medir e
+             calcula o pan pelo tamanho REAL da imagem renderizada vs. o palco
+             (mesmo modelo do fullscreen) — assim uma imagem quadrada pode ser
+             navegada por toda a área, não só dentro de uma janela do seu tamanho. */
+          za.classList.toggle('glb-zoom-expanded', _scale > 1);
+          const sw = za.clientWidth, sh = za.clientHeight;
+          const bw = img.offsetWidth  || sw;   // tamanho-base (layout, sem transform)
+          const bh = img.offsetHeight || sh;
+          const rendW = bw * _scale, rendH = bh * _scale;
+          const maxPanX = Math.max(0, (rendW - sw) / 2);
+          const maxPanY = Math.max(0, (rendH - sh) / 2);
           _panX = Math.max(-maxPanX, Math.min(maxPanX, _panX));
           _panY = Math.max(-maxPanY, Math.min(maxPanY, _panY));
         }
@@ -714,6 +735,14 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
     }
     #vt-img-zoom-area.dragging { cursor: grabbing; }
     #vt-img-zoom-area.zoomed   { cursor: grab; }
+    /* Palco expandido no zoom (fora do fullscreen) — cobre toda a área, igual à galeria */
+    #vt-img-zoom-area.vt-img-zoom-expanded {
+      position: absolute; inset: 0;
+      width: auto; height: auto;
+      max-width: none; max-height: none;
+      box-shadow: none; border-radius: 0;
+      background: transparent;
+    }
 
     #vt-img-modal-img {
       display: block;
@@ -1112,6 +1141,7 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
           + (_imgPanX / _imgScale) + 'px, ' + (_imgPanY / _imgScale) + 'px)';
         var isZoomed = _imgScale > 1;
         imgZoomArea.classList.toggle('zoomed', isZoomed);
+        imgZoomArea.classList.toggle('vt-img-zoom-expanded', isZoomed && !isImgFullscreen());
         if (isZoomed) {
           imgZoomLevel.style.display = 'block';
           imgZoomLevel.textContent = Math.round(_imgScale * 100) + '%';
@@ -1136,9 +1166,15 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
           _imgPanX = Math.max(-maxX, Math.min(maxX, _imgPanX));
           _imgPanY = Math.max(-maxY, Math.min(maxY, _imgPanY));
         } else {
-          /* Modo normal: pan limitado pelo zoom do container */
-          var maxX2 = (imgZoomArea.clientWidth  * (_imgScale - 1)) / 2;
-          var maxY2 = (imgZoomArea.clientHeight * (_imgScale - 1)) / 2;
+          /* Modo normal: expande o palco e usa o tamanho real renderizado vs.
+             palco (mesmo modelo do fullscreen), liberando o pan pela área toda. */
+          imgZoomArea.classList.toggle('vt-img-zoom-expanded', _imgScale > 1);
+          var sw = imgZoomArea.clientWidth, sh = imgZoomArea.clientHeight;
+          var bw = imgModalImg.offsetWidth  || sw;
+          var bh = imgModalImg.offsetHeight || sh;
+          var rW = bw * _imgScale, rH = bh * _imgScale;
+          var maxX2 = Math.max(0, (rW - sw) / 2);
+          var maxY2 = Math.max(0, (rH - sh) / 2);
           _imgPanX = Math.max(-maxX2, Math.min(maxX2, _imgPanX));
           _imgPanY = Math.max(-maxY2, Math.min(maxY2, _imgPanY));
         }
