@@ -25,7 +25,7 @@ export default defineConfig({
         // causando a "piscada" e perda do toast de sucesso.
         ignored: [
           '**/src/data/**',
-          '**/public/uploads/**',
+          '**/public/resources/**',
         ],
       },
     },

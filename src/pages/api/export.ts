@@ -11,12 +11,20 @@ const cwd = process.cwd();
 async function readJsonSafe(p: string): Promise<Record<string, any>> {
   try { return JSON.parse(await fs.readFile(p, 'utf-8')); } catch { return {}; }
 }
-async function listUploads(): Promise<string[]> {
-  try {
-    const dir = path.join(cwd, 'public/uploads');
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    return entries.filter(e => e.isFile() && !e.name.startsWith('.')).map(e => e.name);
-  } catch { return []; }
+// Lista uploads RECURSIVAMENTE, devolvendo caminhos relativos (posix) para
+// preservar a estrutura de subpastas dentro do ZIP de backup.
+async function listUploads(rel = ''): Promise<string[]> {
+  const dir = path.join(cwd, 'public/resources', rel);
+  let entries: import('node:fs').Dirent[] = [];
+  try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return []; }
+  const out: string[] = [];
+  for (const e of entries) {
+    if (e.name.startsWith('.')) continue;
+    const childRel = rel ? `${rel}/${e.name}` : e.name;
+    if (e.isDirectory()) out.push(...await listUploads(childRel));
+    else if (e.isFile()) out.push(childRel);
+  }
+  return out;
 }
 
 function u8(s: string) { return new TextEncoder().encode(s); }
@@ -67,10 +75,10 @@ export const GET: APIRoute = async ({ url }) => {
     if (Object.keys(exportComps).length > 0)
       files.push({ name: 'data/components.json', data: u8(JSON.stringify(exportComps, null, 2)) });
 
-    // uploads
-    for (const fname of await listUploads()) {
-      const buf = await fs.readFile(path.join(cwd, 'public/uploads', fname));
-      files.push({ name: `uploads/${fname}`, data: new Uint8Array(buf) });
+    // uploads (recursivo, preservando subpastas)
+    for (const rel of await listUploads()) {
+      const buf = await fs.readFile(path.join(cwd, 'public/resources', rel));
+      files.push({ name: `resources/${rel}`, data: new Uint8Array(buf) });
     }
 
     if (files.length === 0)

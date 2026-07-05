@@ -148,9 +148,9 @@ async function main() {
     log('Copiando assets de dist/client…');
     await fs.cp(CLIENT_DIR, OUT, { recursive: true });
 
-    // 4b. Copiar public/ por cima (pega uploads/vendor mais recentes que o build)
+    // 4b. Copiar public/ por cima (pega resources/vendor mais recentes que o build)
     if (await exists(PUBLIC_DIR)) {
-      log('Atualizando assets de public/ (uploads, vendor)…');
+      log('Atualizando assets de public/ (resources, vendor)…');
       await fs.cp(PUBLIC_DIR, OUT, { recursive: true });
     }
 

@@ -479,7 +479,10 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
           img.style.height        = Math.ceil(ih * sc) + 'px';
           img.style.maxWidth      = 'none';
           img.style.maxHeight     = 'none';
-          img.style.objectFit     = 'none';
+          /* contain (não none): a caixa já tem o tamanho-alvo (iw*sc x ih*sc)
+             com a proporção da imagem, então a imagem preenche a caixa inteira
+             sem recorte. 'none' renderizava no tamanho natural e clipava. */
+          img.style.objectFit     = 'contain';
           img.style.borderRadius  = '0';
           _panX = 0; _panY = 0;
           applyTransform(false);
@@ -1286,7 +1289,9 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
         img.style.height    = _imgFsH + 'px';
         img.style.maxWidth  = 'none';
         img.style.maxHeight = 'none';
-        img.style.objectFit = 'none';
+        /* contain (não none): a caixa já está no tamanho-alvo (iw*sc x ih*sc)
+           com a proporção da imagem; contain preenche sem recortar. */
+        img.style.objectFit = 'contain';
         imgApplyTransform(false);
       }
 

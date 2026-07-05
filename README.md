@@ -116,7 +116,7 @@ O exportador **não reimplementa** a renderização. Ele sobe internamente o ser
 
 ### O que é incluído e excluído
 
-O site estático inclui todo o conteúdo de `dist/client` e `public/` (suas páginas, uploads, e bibliotecas de `vendor/`). Os **favicons** (`favicon.ico` e `favicon.svg`) também são propagados e já vêm referenciados no `<head>` de cada página publicada (`<link rel="icon">`), com o `.svg` como ícone vetorial preferencial e o `.ico` como fallback universal. São **excluídos** automaticamente os recursos que pertencem apenas à interface do editor: a rota `/editor`, os scripts do editor em `js/` (`editor-main.js` e `components-main.js`, que as páginas publicadas nunca carregam), e as imagens `glv.png`, `openmaker.png` e `VisualCMS360header.png`.
+O site estático inclui todo o conteúdo de `dist/client` e `public/` (suas páginas, recursos (resources), e bibliotecas de `vendor/`). Os **favicons** (`favicon.ico` e `favicon.svg`) também são propagados e já vêm referenciados no `<head>` de cada página publicada (`<link rel="icon">`), com o `.svg` como ícone vetorial preferencial e o `.ico` como fallback universal. São **excluídos** automaticamente os recursos que pertencem apenas à interface do editor: a rota `/editor`, os scripts do editor em `js/` (`editor-main.js` e `components-main.js`, que as páginas publicadas nunca carregam), e as imagens `glv.png`, `openmaker.png` e `VisualCMS360header.png`.
 
 Quando o **domínio base** está configurado em SEO → Configurações do Site, o exportador também gera **`sitemap.xml`** e **`robots.txt`** na raiz do site estático.
 
@@ -154,7 +154,7 @@ VCMS360/
 │   ├── js/
 │   │   ├── editor-main.js         # Lógica do editor de páginas
 │   │   └── components-main.js     # Lógica do editor de componentes
-│   ├── uploads/                   # Imagens enviadas pelo editor (runtime)
+│   ├── resources/                 # Imagens e vídeos enviados pelo editor (runtime)
 │   ├── glv.png                    # Foto do autor (somente editor)
 │   ├── openmaker.png              # Logo Open Maker (somente editor)
 │   ├── VisualCMS360header.png     # Logo do header (somente editor)
@@ -296,7 +296,7 @@ O SEO da página fica **pendente** ao clicar em *Aplicar SEO da página*, sendo 
 
 ### Domínio base e URLs
 
-A **URL canônica** e a `og:url` são absolutas e dependem do **Domínio base** (`baseUrl`) configurado globalmente. Enquanto ele estiver vazio, essas tags são omitidas (em vez de gerar URLs quebradas), já que o site estático é portável e pode ser publicado em qualquer host. Imagens OG relativas (ex.: `/uploads/og.jpg`) também são convertidas em URLs absolutas quando o domínio está definido. Defina o domínio antes de publicar.
+A **URL canônica** e a `og:url` são absolutas e dependem do **Domínio base** (`baseUrl`) configurado globalmente. Enquanto ele estiver vazio, essas tags são omitidas (em vez de gerar URLs quebradas), já que o site estático é portável e pode ser publicado em qualquer host. Imagens OG relativas (ex.: `/resources/og.jpg`) também são convertidas em URLs absolutas quando o domínio está definido. Defina o domínio antes de publicar.
 
 ### Sitemap e robots.txt
 

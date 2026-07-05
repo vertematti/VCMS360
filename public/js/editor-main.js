@@ -295,6 +295,284 @@
       </div>`;
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    //  VCMSAssets — gerência de pastas de mídia (compartilhado Galeria + Tour)
+    //  Pastas reais em public/resources/<pasta>. A pasta de um asset é derivada
+    //  do próprio caminho (/resources/<pasta>/arquivo). Operações no back-end:
+    //  /api/assets/folders (list/create/rename/delete/move) e upload com folder.
+    // ══════════════════════════════════════════════════════════════════════
+    const VCMSAssets = {
+      ALL: '*',            // pseudo-pasta "Todas"
+      _folders: [],        // [{name,count}]
+      _rootCount: 0,
+
+      // Deriva a pasta de um src: '/resources/eventos/x.jpg' → 'eventos'; raiz → ''
+      folderOf(src) {
+        const m = /^\/resources\/([^/]+)\/[^/]+$/.exec(String(src || ''));
+        return m ? m[1] : '';
+      },
+      folders()   { return this._folders; },
+      rootCount() { return this._rootCount; },
+
+      async loadFolders() {
+        try {
+          const r = await fetch('/api/assets/folders');
+          const j = await r.json();
+          this._folders   = Array.isArray(j.folders) ? j.folders : [];
+          this._rootCount = j.rootCount || 0;
+        } catch (e) { this._folders = []; this._rootCount = 0; }
+        return this._folders;
+      },
+      _post(payload) {
+        return fetch('/api/assets/folders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }).then(r => r.json());
+      },
+      createFolder(name)          { return this._post({ action: 'create', name }); },
+      renameFolder(from, to)      { return this._post({ action: 'rename', from, to }); },
+      deleteFolder(name, confirm) { return this._post({ action: 'delete', name, confirm: !!confirm }); },
+      moveAsset(src, toFolder)    { return this._post({ action: 'move', src, toFolder }); },
+
+      async uploadToFolder(file, folder) {
+        const fd = new FormData();
+        fd.append('files[]', file);
+        if (folder) fd.append('folder', folder);
+        const res  = await fetch('/api/assets/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        return data.data?.[0]?.src || data[0]?.src || null;
+      },
+
+      // Recarrega a coleção do AssetManager a partir do servidor (pós-mudança)
+      async reloadAssetManager() {
+        try {
+          const r = await fetch('/api/assets/load');
+          if (!r.ok) return;
+          const list = await r.json();
+          if (Array.isArray(list)) {
+            editor.AssetManager.getAll().reset();
+            const real = list.filter(a => a && a.src && String(a.src).indexOf('/api/') === -1);
+            if (real.length) editor.AssetManager.add(real);
+          }
+        } catch (e) {}
+      },
+
+      // Atualiza src antigo → novo em arrays de itens em memória (galeria/tour)
+      patchSrc(items, oldSrc, newSrc, key) {
+        key = key || 'src';
+        if (!Array.isArray(items)) return;
+        items.forEach(it => { if (it && it[key] === oldSrc) it[key] = newSrc; });
+      },
+
+      // ── Barra de pastas ───────────────────────────────────────────────────
+      // opts: { current, accent, onChange(newCurrent), afterMutation() }
+      buildFolderBar(opts) {
+        const accent = opts.accent || '#3b82f6';
+        const cur    = opts.current;
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'margin-bottom:10px;';
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;';
+
+        const totalAll = this._rootCount + this._folders.reduce((s, f) => s + f.count, 0);
+
+        const mkChip = (key, label, count, opt) => {
+          opt = opt || {};
+          const active = key === cur;
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.style.cssText =
+            'display:inline-flex;align-items:center;gap:5px;border:1px solid ' +
+            (active ? accent : '#3a3a4e') + ';background:' + (active ? accent : '#1a1a2e') +
+            ';color:#fff;border-radius:14px;padding:4px 11px;font-size:12px;cursor:pointer;' +
+            'transition:background .15s,border-color .15s;white-space:nowrap;';
+          chip.innerHTML = (opt.icon ? opt.icon + ' ' : '') + label +
+            (typeof count === 'number' ? ' <span style="opacity:.6;font-size:11px;">' + count + '</span>' : '');
+          chip.onclick = () => opts.onChange(key);
+          return chip;
+        };
+
+        row.appendChild(mkChip(this.ALL, 'Todas', totalAll, { icon: '📂' }));
+        row.appendChild(mkChip('', 'Raiz', this._rootCount, { icon: '🗂' }));
+        this._folders.forEach(f => row.appendChild(mkChip(f.name, f.name, f.count)));
+
+        // ＋ Nova pasta
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.textContent = '＋ Nova pasta';
+        addBtn.style.cssText =
+          'border:1px dashed ' + accent + ';background:transparent;color:' + accent +
+          ';border-radius:14px;padding:4px 11px;font-size:12px;cursor:pointer;white-space:nowrap;';
+        addBtn.onclick = async () => {
+          const name = (prompt('Nome da nova pasta:') || '').trim();
+          if (!name) return;
+          const res = await this.createFolder(name);
+          if (res && res.error) { alert('Erro: ' + res.error); return; }
+          await this.loadFolders();
+          if (res && res.name) opts.onChange(res.name); else opts.afterMutation();
+        };
+        row.appendChild(addBtn);
+        wrap.appendChild(row);
+
+        // Ações da pasta ativa (renomear/excluir) — só quando é uma pasta real
+        if (cur && cur !== this.ALL) {
+          const actions = document.createElement('div');
+          actions.style.cssText = 'display:flex;gap:8px;margin-top:7px;';
+          const mkAction = (label, handler) => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.textContent = label;
+            b.style.cssText = 'background:#22222e;color:#cbd5e1;border:1px solid #3a3a4e;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;';
+            b.onclick = handler;
+            return b;
+          };
+          actions.appendChild(mkAction('✎ Renomear', async () => {
+            const to = (prompt('Novo nome da pasta:', cur) || '').trim();
+            if (!to || to === cur) return;
+            const res = await this.renameFolder(cur, to);
+            if (res && res.error) { alert('Erro: ' + res.error); return; }
+            await this.loadFolders();
+            await this.reloadAssetManager();
+            opts.onChange(res.name || to);
+          }));
+          actions.appendChild(mkAction('🗑 Excluir', async () => {
+            const info = await this.deleteFolder(cur, false);
+            if (info && info.error) { alert('Erro: ' + info.error); return; }
+            let msg = 'Excluir a pasta "' + cur + '"';
+            if (info && info.total) msg += ' e seus ' + info.total + ' arquivo(s)';
+            if (info && info.inUse) msg += '\n\n⚠️ ' + info.inUse + ' imagem(ns) desta pasta está(ão) em uso em páginas/componentes e ficará(ão) quebrada(s).';
+            msg += '\n\nEsta ação não pode ser desfeita. Continuar?';
+            if (!confirm(msg)) return;
+            const res = await this.deleteFolder(cur, true);
+            if (res && res.error) { alert('Erro: ' + res.error); return; }
+            await this.loadFolders();
+            await this.reloadAssetManager();
+            opts.onChange(this.ALL);
+          }));
+          wrap.appendChild(actions);
+        }
+        return wrap;
+      },
+
+      // ── Grade de assets (maior, filtrada por pasta, com "mover") ────────────
+      // opts: { grid, current, isVideo, accent, onPick(src), afterMutation() }
+      fillGrid(opts) {
+        const grid   = opts.grid;
+        const cur    = opts.current;
+        const accent = opts.accent || '#3b82f6';
+        const isVideo = !!opts.isVideo;
+        grid.innerHTML = '';
+
+        const videoExts = ['.mp4', '.webm', '.ogg', '.mov'];
+        const isVideoSrc = s => videoExts.some(e => String(s).toLowerCase().includes(e));
+
+        const all = editor.AssetManager.getAll();
+        const list = [];
+        all.forEach(a => {
+          const src = a.get('src') || '';
+          if (!src || src.indexOf('/api/') !== -1) return;
+          if (isVideo ? !isVideoSrc(src) : isVideoSrc(src)) return;
+          const fld = this.folderOf(src);
+          if (cur === this.ALL || fld === cur) list.push(src);
+        });
+
+        if (!list.length) {
+          grid.innerHTML = '<p style="color:#999;font-size:12px;padding:10px;margin:0;">Nenhum ' +
+            (isVideo ? 'vídeo' : 'imagem') + ' nesta pasta. Faça upload abaixo.</p>';
+          return;
+        }
+
+        list.forEach(src => {
+          const cell = document.createElement('div');
+          cell.style.cssText =
+            'position:relative;width:110px;height:110px;border-radius:6px;overflow:hidden;cursor:pointer;' +
+            'border:2px solid transparent;transition:border-color .15s,transform .15s;flex-shrink:0;' +
+            'background:#1a1a2e;display:flex;align-items:center;justify-content:center;';
+          if (isVideo) {
+            const nm = src.split('/').pop();
+            cell.innerHTML = '<div style="text-align:center;padding:6px;"><div style="font-size:30px;">🎬</div>' +
+              '<div style="font-size:10px;color:#aaa;word-break:break-all;line-height:1.2;margin-top:3px;">' + nm + '</div></div>';
+          } else {
+            cell.innerHTML = '<img src="' + src + '" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;">';
+          }
+          cell.onmouseover = () => { cell.style.borderColor = accent; cell.style.transform = 'scale(1.03)'; };
+          cell.onmouseout  = () => { cell.style.borderColor = 'transparent'; cell.style.transform = ''; };
+          cell.onclick = () => opts.onPick(src);
+
+          // Botão "mover para pasta"
+          const moveBtn = document.createElement('button');
+          moveBtn.type = 'button';
+          moveBtn.title = 'Mover para pasta';
+          moveBtn.textContent = '📁';
+          moveBtn.style.cssText =
+            'position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);border:none;color:#fff;' +
+            'width:24px;height:24px;border-radius:4px;font-size:12px;cursor:pointer;display:flex;' +
+            'align-items:center;justify-content:center;z-index:2;line-height:1;';
+          moveBtn.onclick = (e) => { e.stopPropagation(); this._showMoveMenu(moveBtn, src, opts.afterMutation); };
+          cell.appendChild(moveBtn);
+          grid.appendChild(cell);
+        });
+      },
+
+      // Menu flutuante de "mover para" (anexado ao body para não ser clipado)
+      _showMoveMenu(anchor, src, afterMutation) {
+        document.querySelectorAll('.vcms-move-menu').forEach(m => m.remove());
+        const curFolder = this.folderOf(src);
+        const menu = document.createElement('div');
+        menu.className = 'vcms-move-menu';
+        menu.style.cssText =
+          'position:fixed;z-index:2147483647;background:#1e1e2e;border:1px solid #3a3a4e;border-radius:6px;' +
+          'box-shadow:0 8px 30px rgba(0,0,0,0.6);padding:5px;min-width:150px;max-height:260px;overflow-y:auto;';
+        const header = document.createElement('div');
+        header.textContent = 'Mover para…';
+        header.style.cssText = 'font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;padding:5px 8px 6px;';
+        menu.appendChild(header);
+
+        const opt = (label, folderKey) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          const isCur = folderKey === curFolder;
+          b.textContent = (isCur ? '• ' : '') + label;
+          b.disabled = isCur;
+          b.style.cssText =
+            'display:block;width:100%;text-align:left;background:transparent;border:none;color:' +
+            (isCur ? '#666' : '#e2e8f0') + ';padding:6px 8px;font-size:12px;border-radius:4px;' +
+            (isCur ? 'cursor:default;' : 'cursor:pointer;');
+          if (!isCur) {
+            b.onmouseover = () => b.style.background = '#2a2a3e';
+            b.onmouseout  = () => b.style.background = 'transparent';
+            b.onclick = async () => {
+              menu.remove();
+              const res = await this.moveAsset(src, folderKey);
+              if (res && res.error) { alert('Erro: ' + res.error); return; }
+              await this.loadFolders();
+              await this.reloadAssetManager();
+              if (afterMutation) afterMutation({ from: src, to: (res && res.src) || src });
+            };
+          }
+          return b;
+        };
+
+        menu.appendChild(opt('🗂 Raiz', ''));
+        this._folders.forEach(f => menu.appendChild(opt('📁 ' + f.name, f.name)));
+
+        document.body.appendChild(menu);
+        const r = anchor.getBoundingClientRect();
+        const mw = menu.offsetWidth, mh = menu.offsetHeight;
+        let left = r.right - mw; if (left < 8) left = 8;
+        let top  = r.bottom + 4;
+        if (top + mh > window.innerHeight - 8) top = r.top - mh - 4;
+        menu.style.left = Math.max(8, left) + 'px';
+        menu.style.top  = Math.max(8, top) + 'px';
+
+        const closer = (ev) => {
+          if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('mousedown', closer, true); }
+        };
+        setTimeout(() => document.addEventListener('mousedown', closer, true), 0);
+      },
+    };
+
     // ── Tipo GrapesJS para Virtual Tour ──────────────────────────────────────
     editor.DomComponents.addType('virtual-tour', {
 
@@ -492,6 +770,7 @@
       let editingHotspotIndex = -1;  // índice do hotspot sendo editado
       let pickingForScene = -1;      // para qual cena está escolhendo mídia
       let pickerMode     = 'image';  // 'image' | 'video'
+      let pickerFolder   = VCMSAssets.ALL; // pasta selecionada no picker
       let pickerCallback = null;     // função chamada com a URL escolhida
       let pickerReturnScreen = null; // tela para voltar após picker
       let hotspotViewer = null;      // viewer pannellum do editor de hotspot
@@ -1027,6 +1306,11 @@
         pickerReturnScreen = returnScreen || screenScene;
         [screenList, screenScene, screenHotspot].forEach(s => s.style.display = 'none');
         screenPicker.style.display = 'block';
+        /* Alarga o dialog para acomodar a grade de pastas/miniaturas maiores */
+        (function() {
+          var dlg = document.querySelector('.gjs-mdl-dialog');
+          if (dlg) { dlg.style.width = '740px'; dlg.style.maxWidth = '94vw'; }
+        })();
         const titles = { image: 'Selecionar Imagem 360°', video: 'Selecionar Vídeo' };
         editor.Modal.setTitle(titles[pickerMode] || 'Selecionar Arquivo');
         renderPicker();
@@ -1054,49 +1338,39 @@
       }
 
       function renderPicker() {
+        _renderPickerNow();
+        VCMSAssets.loadFolders().then(() => {
+          if (screenPicker.style.display !== 'none') _renderPickerNow();
+        });
+      }
+
+      function _renderPickerNow() {
         screenPicker.innerHTML = '';
         const isVideo   = pickerMode === 'video';
         const accentClr = isVideo ? '#dc2626' : '#3b82f6';
         const uploadClr = isVideo ? '#b91c1c' : '#6366f1';
-        const allAssets = editor.AssetManager.getAll();
 
-        // ── Grid de assets existentes ──────────────────────────────────────
+        // ── Barra de pastas ────────────────────────────────────────────────
+        screenPicker.appendChild(VCMSAssets.buildFolderBar({
+          current: pickerFolder,
+          accent: accentClr,
+          onChange: (f) => { pickerFolder = f; _renderPickerNow(); },
+          afterMutation: () => _renderPickerNow(),
+        }));
+
+        // ── Grid de assets (maior, filtrado pela pasta atual) ──────────────
         const gridLbl = document.createElement('div');
-        gridLbl.textContent = 'Imagens disponíveis';
+        gridLbl.textContent = isVideo ? 'Vídeos disponíveis' : 'Imagens disponíveis';
         gridLbl.style.cssText = 'font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
         screenPicker.appendChild(gridLbl);
 
         const grid = document.createElement('div');
-        grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;max-height:200px;overflow-y:auto;background:#111;border-radius:6px;padding:8px;margin-bottom:12px;min-height:56px;';
-
-        // Filtrar assets por tipo
-        const videoExts = ['.mp4','.webm','.ogg','.mov'];
-        const isVideoSrc = s => videoExts.some(e => s.toLowerCase().includes(e));
-        const filtered = allAssets.filter(a => {
-          const src = a.get('src') || '';
-          return isVideo ? isVideoSrc(src) : !isVideoSrc(src);
+        grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;max-height:360px;overflow-y:auto;background:#111;border-radius:6px;padding:10px;margin-bottom:12px;min-height:70px;';
+        VCMSAssets.fillGrid({
+          grid, current: pickerFolder, isVideo, accent: accentClr,
+          onPick: (src) => { onImagePicked(src); returnFromPicker(); },
+          afterMutation: () => _renderPickerNow(),
         });
-
-        if (filtered.length) {
-          filtered.forEach(asset => {
-            const src = asset.get('src');
-            const cell = document.createElement('div');
-            cell.style.cssText = 'position:relative;width:80px;height:55px;border-radius:4px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .15s,transform .15s;flex-shrink:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center;';
-            if (isVideo) {
-              // Vídeo: mostrar nome do arquivo + ícone
-              const name = src.split('/').pop();
-              cell.innerHTML = `<div style="text-align:center;padding:4px;"><div style="font-size:20px;">🎬</div><div style="font-size:9px;color:#aaa;word-break:break-all;line-height:1.2;margin-top:2px;">${name}</div></div>`;
-            } else {
-              cell.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;">`;
-            }
-            cell.onmouseover = () => { cell.style.borderColor = accentClr; cell.style.transform='scale(1.04)'; };
-            cell.onmouseout  = () => { cell.style.borderColor = 'transparent'; cell.style.transform=''; };
-            cell.onclick = () => { onImagePicked(src); returnFromPicker(); };
-            grid.appendChild(cell);
-          });
-        } else {
-          grid.innerHTML = `<p style="color:#999;font-size:12px;padding:8px;margin:0;">Nenhum ${isVideo?'vídeo':'imagem'} nos assets. Faça upload abaixo.</p>`;
-        }
         screenPicker.appendChild(grid);
 
         // ── URL manual ────────────────────────────────────────────────────
@@ -1119,14 +1393,15 @@
         urlRow.appendChild(urlInput); urlRow.appendChild(urlBtn);
         screenPicker.appendChild(urlRow);
 
-        // ── Upload ────────────────────────────────────────────────────────
+        // ── Upload (para a pasta atual) ────────────────────────────────────
         const uploadRow = document.createElement('div');
         uploadRow.style.cssText = 'display:flex;gap:8px;align-items:center;';
         const uploadStatus = document.createElement('span');
         uploadStatus.style.cssText = 'font-size:12px;color:#bbb;flex:1;';
+        const destFolder = (pickerFolder === VCMSAssets.ALL) ? '' : pickerFolder;
         const uploadLabel = document.createElement('label');
         uploadLabel.style.cssText = `background:${uploadClr};color:#fff;border-radius:3px;padding:7px 16px;cursor:pointer;font-size:13px;display:inline-block;flex-shrink:0;`;
-        uploadLabel.textContent = isVideo ? '🎬 Upload Vídeo' : '📤 Upload Imagem';
+        uploadLabel.textContent = (isVideo ? '🎬 Upload Vídeo' : '📤 Upload Imagem') + (destFolder ? ` → ${destFolder}` : '');
         const uploadInput = document.createElement('input');
         uploadInput.type = 'file';
         uploadInput.accept = isVideo ? 'video/*' : 'image/*';
@@ -1136,15 +1411,12 @@
           const file = e.target.files[0];
           if (!file) return;
           uploadStatus.textContent = '⏳ Enviando...';
-          const fd = new FormData(); fd.append('files[]', file);
           try {
-            const res  = await fetch('/api/assets/upload', { method:'POST', body:fd });
-            const data = await res.json();
-            const src  = data.data?.[0]?.src || data[0]?.src;
+            const src = await VCMSAssets.uploadToFolder(file, destFolder);
             if (src) {
               editor.AssetManager.add({ src, name: file.name });
+              await VCMSAssets.loadFolders();
               uploadStatus.textContent = `✓ ${file.name.slice(0,30)}`;
-              // Chamar picked e voltar para a tela de origem
               onImagePicked(src);
               returnFromPicker();
             } else {
@@ -2196,6 +2468,7 @@
 
       // Índice da imagem sendo trocada (-1 = nova imagem)
       let pickingIndex = -1;
+      let pickerFolder = VCMSAssets.ALL; // pasta selecionada no picker da galeria
 
       // ── Abrir tela do picker ──────────────────────────────────────────────
       function showPicker(idx) {
@@ -2231,29 +2504,32 @@
 
       // ── Renderizar tela do picker ─────────────────────────────────────────
       function renderPicker() {
+        _renderPickerNow();
+        VCMSAssets.loadFolders().then(() => {
+          if (screenPicker.style.display !== 'none') _renderPickerNow();
+        });
+      }
+
+      function _renderPickerNow() {
         screenPicker.innerHTML = '';
+        const accentClr = '#3b82f6';
 
-        // Assets existentes
-        const allAssets = editor.AssetManager.getAll();
+        // ── Barra de pastas ────────────────────────────────────────────────
+        screenPicker.appendChild(VCMSAssets.buildFolderBar({
+          current: pickerFolder,
+          accent: accentClr,
+          onChange: (f) => { pickerFolder = f; _renderPickerNow(); },
+          afterMutation: () => _renderPickerNow(),
+        }));
 
+        // ── Grid (maior, filtrado pela pasta atual) ────────────────────────
         const grid = document.createElement('div');
-        grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;max-height:200px;overflow-y:auto;background:#111;border-radius:6px;padding:8px;margin-bottom:12px;min-height:56px;';
-
-        if (allAssets.length) {
-          allAssets.forEach(asset => {
-            const src = asset.get('src');
-            const img = document.createElement('img');
-            img.src = src;
-            img.style.cssText = 'width:68px;height:68px;object-fit:cover;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:border-color .15s,transform .15s;';
-            img.title = src;
-            img.onmouseover = () => { img.style.borderColor='#3b82f6'; img.style.transform='scale(1.05)'; };
-            img.onmouseout  = () => { img.style.borderColor='transparent'; img.style.transform=''; };
-            img.onclick = () => onImagePicked(src);
-            grid.appendChild(img);
-          });
-        } else {
-          grid.innerHTML = '<p style="color:#999;font-size:12px;padding:8px;margin:0;">Nenhuma imagem ainda. Faça upload abaixo.</p>';
-        }
+        grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;max-height:360px;overflow-y:auto;background:#111;border-radius:6px;padding:10px;margin-bottom:12px;min-height:70px;';
+        VCMSAssets.fillGrid({
+          grid, current: pickerFolder, isVideo: false, accent: accentClr,
+          onPick: (src) => onImagePicked(src),
+          afterMutation: () => _renderPickerNow(),
+        });
         screenPicker.appendChild(grid);
 
         // URL manual
@@ -2270,16 +2546,17 @@
         urlRow.appendChild(urlInput); urlRow.appendChild(urlBtn);
         screenPicker.appendChild(urlRow);
 
-        // Upload
+        // Upload (para a pasta atual; múltiplos arquivos)
         const uploadRow = document.createElement('div');
         uploadRow.style.cssText = 'display:flex;gap:8px;align-items:center;';
 
         const uploadStatus = document.createElement('span');
         uploadStatus.style.cssText = 'font-size:12px;color:#888;flex:1;';
 
+        const destFolder = (pickerFolder === VCMSAssets.ALL) ? '' : pickerFolder;
         const uploadLabel = document.createElement('label');
         uploadLabel.style.cssText = 'background:#6366f1;color:#fff;border-radius:3px;padding:7px 16px;cursor:pointer;font-size:13px;flex-shrink:0;display:inline-block;';
-        uploadLabel.textContent = '📤 Fazer Upload';
+        uploadLabel.textContent = '📤 Fazer Upload' + (destFolder ? ` → ${destFolder}` : '');
         const uploadInput = document.createElement('input');
         uploadInput.type='file'; uploadInput.accept='image/*'; uploadInput.multiple=true;
         uploadInput.style.display='none';
@@ -2292,18 +2569,17 @@
           uploadLabel.style.opacity = '0.6';
           uploadLabel.style.pointerEvents = 'none';
 
+          const replacing = pickingIndex !== -1;
+          let firstDone = false;
           for (const file of files) {
-            const fd = new FormData();
-            fd.append('files[]', file);
             try {
-              const res  = await fetch('/api/assets/upload', { method:'POST', body:fd });
-              const data = await res.json();
-              const src  = data.data?.[0]?.src || data[0]?.src;
+              const src = await VCMSAssets.uploadToFolder(file, destFolder);
               if (src) {
                 editor.AssetManager.add({ src, name: file.name });
                 uploadStatus.textContent = `✓ ${file.name}`;
+                if (replacing) { onImagePicked(src); firstDone = true; break; } // troca: só o primeiro
                 onImagePicked(src);
-                return; // volta para galeria automaticamente
+                firstDone = true;
               } else {
                 uploadStatus.textContent = '✗ Erro: resposta inválida';
               }
@@ -2312,8 +2588,10 @@
               uploadStatus.textContent = '✗ Erro no upload: ' + err.message;
             }
           }
+          await VCMSAssets.loadFolders();
           uploadLabel.style.opacity = '';
           uploadLabel.style.pointerEvents = '';
+          if (firstDone) showGallery();
         };
 
         const cancelBtn = document.createElement('button');
@@ -3085,8 +3363,8 @@
               </div>
               <label>og:description</label>
               <textarea id="seo-ogDescription" placeholder="(usa a descrição acima)">${esc(v(pageSeo,'ogDescription'))}</textarea>
-              <label>og:image (URL ou /uploads/...)</label>
-              <input type="text" id="seo-ogImage" value="${esc(v(pageSeo,'ogImage'))}" placeholder="${esc(site.defaultOgImage||'/uploads/og-image.jpg')}">
+              <label>og:image (URL ou /resources/...)</label>
+              <input type="text" id="seo-ogImage" value="${esc(v(pageSeo,'ogImage'))}" placeholder="${esc(site.defaultOgImage||'/resources/og-image.jpg')}">
               <label>twitter:card</label>
               <select id="seo-twitterCard">
                 <option value="summary_large_image">summary_large_image</option>
@@ -4472,7 +4750,7 @@
     editor.on('load', injectCanvasComponentFix);
 
     // Injeta uma tag <base> no <head> do canvas. O iframe do canvas é about:blank,
-    // então caminhos root-relative (ex.: /uploads/imagem.jpg) não resolvem para um
+    // então caminhos root-relative (ex.: /resources/imagem.jpg) não resolvem para um
     // host válido dentro dele — por isso a imagem de fundo selecionada não aparecia
     // no canvas (embora resolvesse no documento pai, daí o preview funcionar). Com a
     // <base> apontando para a origem, esses caminhos passam a resolver corretamente.
@@ -4590,7 +4868,7 @@
       await loadComponentBlocks();
       updateUI();
 
-      // Sincroniza o Asset Manager com as imagens reais do servidor (public/uploads),
+      // Sincroniza o Asset Manager com as imagens reais do servidor (public/resources),
       // DEPOIS de carregar o projectData. O reset + add deixa a lista igual à pasta
       // de uploads, removendo qualquer fantasma/duplicata restaurada do projectData.
       try {

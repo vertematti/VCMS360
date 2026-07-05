@@ -521,7 +521,7 @@
       }());
 
     // Injeta uma tag <base> no <head> do canvas (about:blank) para que caminhos
-    // root-relative (ex.: /uploads/imagem.jpg) resolvam corretamente dentro do
+    // root-relative (ex.: /resources/imagem.jpg) resolvam corretamente dentro do
     // iframe — necessário para a imagem de fundo aparecer no canvas. Não altera
     // o HTML/CSS salvo (continua relativo e portável).
     function injectCanvasBase() {
@@ -607,7 +607,7 @@
         } catch (e) {}
       });
 
-      // Sincroniza o Asset Manager com as imagens reais do servidor (public/uploads).
+      // Sincroniza o Asset Manager com as imagens reais do servidor (public/resources).
       // reset + add deixa a lista igual à pasta de uploads, sem fantasmas/duplicatas.
       try {
         const r = await fetch('/api/assets/load');

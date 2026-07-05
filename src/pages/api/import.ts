@@ -31,6 +31,11 @@ async function readJsonSafe(p: string): Promise<Record<string, any>> {
   try { return JSON.parse(await fs.readFile(p, 'utf-8')); } catch { return {}; }
 }
 
+// Backups antigos referenciam /uploads/… ; convertemos para /resources/ ao importar.
+function legacyToResources(txt: string): string {
+  return txt.split('/uploads/').join('/resources/');
+}
+
 // ── POST /api/import?action=preview — analisa o ZIP e retorna conteúdo ─────
 // ── POST /api/import?action=commit  — executa a importação seletiva ─────────
 export const POST: APIRoute = async ({ request, url }) => {
@@ -56,12 +61,17 @@ export const POST: APIRoute = async ({ request, url }) => {
 
     for (const entry of entries) {
       if (entry.name === 'data/pages.json') {
-        try { zipPages = JSON.parse(dec.decode(entry.data)); } catch {}
+        try { zipPages = JSON.parse(legacyToResources(dec.decode(entry.data))); } catch {}
       } else if (entry.name === 'data/components.json') {
-        try { zipComps = JSON.parse(dec.decode(entry.data)); } catch {}
-      } else if (entry.name.startsWith('uploads/')) {
-        const fname = path.basename(entry.name);
-        if (fname && !fname.startsWith('.')) zipUploads.push({ name: fname, data: entry.data });
+        try { zipComps = JSON.parse(legacyToResources(dec.decode(entry.data))); } catch {}
+      } else if (entry.name.startsWith('resources/') || entry.name.startsWith('uploads/')) {
+        // Aceita backups novos (resources/) e antigos (uploads/); grava em resources.
+        const prefix = entry.name.startsWith('resources/') ? 'resources/' : 'uploads/';
+        const rel = entry.name.slice(prefix.length).replace(/\\/g, '/');
+        const bn  = path.basename(rel);
+        if (rel && bn && !bn.startsWith('.') && !rel.includes('..') && !rel.startsWith('/')) {
+          zipUploads.push({ name: rel, data: entry.data });
+        }
       }
     }
 
@@ -109,9 +119,11 @@ export const POST: APIRoute = async ({ request, url }) => {
       report.push(...selectedComps.map(c => `component:${c}`));
     }
 
-    // Uploads (sempre todos)
+    // Uploads (sempre todos) — preserva subpastas, com trava anti-traversal
+    const uploadsBase = path.resolve(cwd, 'public/resources');
     for (const { name, data } of zipUploads) {
-      const dest = path.join(cwd, 'public/uploads', name);
+      const dest = path.resolve(uploadsBase, name);
+      if (dest !== uploadsBase && !dest.startsWith(uploadsBase + path.sep)) continue;
       await fs.mkdir(path.dirname(dest), { recursive: true });
       await fs.writeFile(dest, data);
       report.push(`upload:${name}`);

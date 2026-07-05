@@ -13,8 +13,8 @@ export const POST: APIRoute = async () => {
     const pagesPath      = path.resolve(cwd, 'src/data/pages.json');
     const componentsPath = path.resolve(cwd, 'src/data/components.json');
     const uploadDirs     = [
-      path.resolve(cwd, 'public/uploads'),       // uploads do dev server
-      path.resolve(cwd, 'dist/client/uploads'),  // uploads copiados no build
+      path.resolve(cwd, 'public/resources'),       // uploads do dev server
+      path.resolve(cwd, 'dist/client/resources'),  // uploads copiados no build
     ];
 
     const summary = { pages: 0, components: 0, uploads: { deleted: 0, failed: 0 } };
