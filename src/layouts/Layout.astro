@@ -580,6 +580,10 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
           const cols    = parseInt(colsRaw, 10) || 3;
           const gap    = gallery.getAttribute('data-gap')    || '8px';
           const radius = gallery.getAttribute('data-radius') || '6px';
+          // Tamanho das imagens (5 gradações); 'full'/ausente = preenche
+          const SIZE_PX = { sm: '130px', md: '180px', lg: '230px', xl: '300px' };
+          const fixedW  = SIZE_PX[gallery.getAttribute('data-size') || 'full'] || '';
+          const singleBasis = fixedW || 'clamp(150px,22%,240px)';
 
           // Limpar qualquer conteúdo residual
           gallery.innerHTML = '';
@@ -594,10 +598,11 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
               ].join(';')
             : [
                 'display:grid',
-                'grid-template-columns:repeat(' + cols + ',1fr)',
+                'grid-template-columns:repeat(' + cols + ',' + (fixedW ? 'minmax(0,' + fixedW + ')' : '1fr') + ')',
+                fixedW ? 'justify-content:center' : '',
                 'gap:' + gap,
                 'width:100%',
-              ].join(';');
+              ].filter(Boolean).join(';');
 
           imgs.forEach((item, i) => {
             const cell = document.createElement('div');
@@ -609,7 +614,7 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
               'cursor:pointer',
               'aspect-ratio:1/1',
               'background:#111',
-              single ? 'flex:0 0 clamp(150px,22%,240px)' : '',
+              single ? 'flex:0 0 ' + singleBasis : '',
               single ? 'scroll-snap-align:start' : '',
             ].filter(Boolean).join(';');
 

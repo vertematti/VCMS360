@@ -2197,7 +2197,10 @@
     }
 
     // ── Gera o HTML estático interno da galeria (renderizado dentro do iframe) ─
-    function buildGalleryHTML(images, cols, gap, radius) {
+    // Mapa de gradações de tamanho das imagens (largura). 'full' = preenche.
+    const GALLERY_SIZE_PX = { sm: '130px', md: '180px', lg: '230px', xl: '300px' };
+
+    function buildGalleryHTML(images, cols, gap, radius, size) {
       if (!images || !images.length) {
         return `<div data-gallery-empty="1" style="display:flex;flex-direction:column;
           align-items:center;justify-content:center;min-height:160px;
@@ -2211,7 +2214,10 @@
         </div>`;
       }
       const single = String(cols) === 'single';   // linha única com rolagem horizontal
-      const itemExtra = single ? 'flex:0 0 clamp(150px,22%,240px);scroll-snap-align:start;' : '';
+      const fixedW = GALLERY_SIZE_PX[size] || '';  // '' = preencher (padrão)
+      // Largura do item na linha única: tamanho fixo ou o clamp responsivo padrão
+      const singleBasis = fixedW || 'clamp(150px,22%,240px)';
+      const itemExtra = single ? `flex:0 0 ${singleBasis};scroll-snap-align:start;` : '';
       const items = images.map((img, i) => {
         const title = img.title || '';
         const titleOverlay = title ? `
@@ -2238,7 +2244,10 @@
       if (single) {
         return `<div style="display:flex;flex-wrap:nowrap;align-items:flex-start;gap:${gap};padding:4px 4px 10px;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;">${items}</div>`;
       }
-      return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${gap};padding:4px;">${items}</div>`;
+      // Grade: 'full' = colunas 1fr (preenche); tamanho fixo = colunas limitadas por minmax e centralizadas
+      const template = fixedW ? `repeat(${cols},minmax(0,${fixedW}))` : `repeat(${cols},1fr)`;
+      const justify  = fixedW ? 'justify-content:center;' : '';
+      return `<div style="display:grid;grid-template-columns:${template};gap:${gap};padding:4px;${justify}">${items}</div>`;
     }
 
     // ── Tipo GrapesJS para galeria ────────────────────────────────────────────
@@ -2258,6 +2267,7 @@
           'gallery-columns': '3',
           'gallery-gap':     '8px',
           'gallery-radius':  '6px',
+          'gallery-size':    'full',
           'gallery-name':    'Galeria',
           tagName: 'div',
           attributes: { 'data-gjs-type': 'photo-gallery' },
@@ -2274,7 +2284,7 @@
         },
 
         init() {
-          this.listenTo(this, 'change:gallery-images change:gallery-columns change:gallery-gap change:gallery-radius', this._render);
+          this.listenTo(this, 'change:gallery-images change:gallery-columns change:gallery-gap change:gallery-radius change:gallery-size', this._render);
         },
 
         _render() {
@@ -2282,6 +2292,7 @@
           const cols   = this.get('gallery-columns') || '3';
           const gap    = this.get('gallery-gap')     || '8px';
           const radius = this.get('gallery-radius')  || '6px';
+          const size   = this.get('gallery-size')    || 'full';
           const gname  = this.get('gallery-name')    || 'Galeria';
 
           // Sincronizar atributos silenciosamente (sem trigger de eventos)
@@ -2294,10 +2305,11 @@
             'data-columns':  cols,
             'data-gap':      gap,
             'data-radius':   radius,
+            'data-size':     size,
             'data-gname':    gname,
           }, { silent: true });
 
-          this.components(buildGalleryHTML(imgs, cols, gap, radius));
+          this.components(buildGalleryHTML(imgs, cols, gap, radius, size));
         },
 
         // Sobrescreve a serialização HTML: salva apenas o <div> com atributos,
@@ -2337,6 +2349,7 @@
       if (attrs['data-columns']) comp.set('gallery-columns', attrs['data-columns'], { silent: true });
       if (attrs['data-gap'])     comp.set('gallery-gap',     attrs['data-gap'],     { silent: true });
       if (attrs['data-radius'])  comp.set('gallery-radius',  attrs['data-radius'],  { silent: true });
+      if (attrs['data-size'])    comp.set('gallery-size',    attrs['data-size'],    { silent: true });
       if (attrs['data-gname'])   comp.set('gallery-name',    attrs['data-gname'],   { silent: true });
       if (!attrs['data-gallery-id']) {
         comp.addAttributes({ 'data-gallery-id': galleryUID() });
@@ -2454,6 +2467,7 @@
       let cols    = comp.get('gallery-columns') || '3';
       let gap     = comp.get('gallery-gap')     || '8px';
       let radius  = comp.get('gallery-radius')  || '6px';
+      let size    = comp.get('gallery-size')    || 'full';
       let gname   = comp.get('gallery-name')    || 'Galeria';
 
       // Container principal do modal
@@ -2657,6 +2671,7 @@
         }
 
         cfg.appendChild(mkSel('Colunas',  [['2','2'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8'],['9','9'],['10','10'],['single','Linha única']], cols, v => { cols=v; }));
+        cfg.appendChild(mkSel('Tamanho',  [['sm','Pequeno'],['md','Médio'],['lg','Grande'],['xl','Muito grande'],['full','Preencher']], size, v => { size=v; }));
         cfg.appendChild(mkSel('Espaço',   [['4px','Mínimo'],['8px','Pequeno'],['12px','Médio'],['20px','Grande']], gap, v => { gap=v; }));
         cfg.appendChild(mkSel('Bordas',   [['0px','Reto'],['6px','Suave'],['12px','Arredondado'],['50%','Círculo']], radius, v => { radius=v; }));
         screenGallery.appendChild(cfg);
@@ -2775,6 +2790,7 @@
           comp.set('gallery-columns', cols);
           comp.set('gallery-gap',     gap);
           comp.set('gallery-radius',  radius);
+          comp.set('gallery-size',    size);
           comp.set('gallery-name',    gname);
           var _dlg = document.querySelector('.gjs-mdl-dialog');
           if (_dlg) { _dlg.style.width = ''; _dlg.style.maxWidth = ''; }
@@ -2934,6 +2950,7 @@
             'data-columns':  comp.get('gallery-columns') || '3',
             'data-gap':      comp.get('gallery-gap')     || '8px',
             'data-radius':   comp.get('gallery-radius')  || '6px',
+            'data-size':     comp.get('gallery-size')    || 'full',
             'data-gname':    comp.get('gallery-name')    || 'Galeria',
           }, { silent: true });
         });
