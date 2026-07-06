@@ -575,21 +575,29 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
           }
 
           // ── 3. Grid vazio: construir o grid de miniaturas no DOM ─────────────
-          const cols   = parseInt(gallery.getAttribute('data-columns') || '3', 10);
+          const colsRaw = gallery.getAttribute('data-columns') || '3';
+          const single  = colsRaw === 'single';           // linha única com rolagem horizontal
+          const cols    = parseInt(colsRaw, 10) || 3;
           const gap    = gallery.getAttribute('data-gap')    || '8px';
           const radius = gallery.getAttribute('data-radius') || '6px';
 
           // Limpar qualquer conteúdo residual
           gallery.innerHTML = '';
 
-          // Container grid responsivo
+          // Container: grid (multi-coluna) ou flex com rolagem horizontal (linha única)
           const grid = document.createElement('div');
-          grid.style.cssText = [
-            'display:grid',
-            'grid-template-columns:repeat(' + cols + ',1fr)',
-            'gap:' + gap,
-            'width:100%',
-          ].join(';');
+          grid.style.cssText = single
+            ? [
+                'display:flex', 'flex-wrap:nowrap', 'align-items:flex-start',
+                'gap:' + gap, 'width:100%', 'overflow-x:auto', 'padding-bottom:6px',
+                'scroll-snap-type:x proximity', '-webkit-overflow-scrolling:touch',
+              ].join(';')
+            : [
+                'display:grid',
+                'grid-template-columns:repeat(' + cols + ',1fr)',
+                'gap:' + gap,
+                'width:100%',
+              ].join(';');
 
           imgs.forEach((item, i) => {
             const cell = document.createElement('div');
@@ -601,7 +609,9 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
               'cursor:pointer',
               'aspect-ratio:1/1',
               'background:#111',
-            ].join(';');
+              single ? 'flex:0 0 clamp(150px,22%,240px)' : '',
+              single ? 'scroll-snap-align:start' : '',
+            ].filter(Boolean).join(';');
 
             const img = document.createElement('img');
             img.src = item.src;

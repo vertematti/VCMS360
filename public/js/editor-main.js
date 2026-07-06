@@ -2210,6 +2210,8 @@
           </div>
         </div>`;
       }
+      const single = String(cols) === 'single';   // linha única com rolagem horizontal
+      const itemExtra = single ? 'flex:0 0 clamp(150px,22%,240px);scroll-snap-align:start;' : '';
       const items = images.map((img, i) => {
         const title = img.title || '';
         const titleOverlay = title ? `
@@ -2224,7 +2226,7 @@
           ">${title}</div>` : '';
         return `
         <div data-lb-index="${i}" style="position:relative;cursor:pointer;overflow:hidden;
-          border-radius:${radius};aspect-ratio:1/1;
+          border-radius:${radius};aspect-ratio:1/1;${itemExtra}
           transition:transform 0.2s,box-shadow 0.2s;"
           onmouseover="this.style.transform='scale(1.03)';this.style.boxShadow='0 4px 20px rgba(0,0,0,.35)'"
           onmouseout="this.style.transform='';this.style.boxShadow=''">
@@ -2233,6 +2235,9 @@
           ${titleOverlay}
         </div>`;
       }).join('');
+      if (single) {
+        return `<div style="display:flex;flex-wrap:nowrap;align-items:flex-start;gap:${gap};padding:4px 4px 10px;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;">${items}</div>`;
+      }
       return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${gap};padding:4px;">${items}</div>`;
     }
 
@@ -2651,7 +2656,7 @@
           box.appendChild(lbl); box.appendChild(sel); return box;
         }
 
-        cfg.appendChild(mkSel('Colunas',  [['2','2'],['3','3'],['4','4'],['5','5']], cols, v => { cols=v; }));
+        cfg.appendChild(mkSel('Colunas',  [['2','2'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8'],['9','9'],['10','10'],['single','Linha única']], cols, v => { cols=v; }));
         cfg.appendChild(mkSel('Espaço',   [['4px','Mínimo'],['8px','Pequeno'],['12px','Médio'],['20px','Grande']], gap, v => { gap=v; }));
         cfg.appendChild(mkSel('Bordas',   [['0px','Reto'],['6px','Suave'],['12px','Arredondado'],['50%','Círculo']], radius, v => { radius=v; }));
         screenGallery.appendChild(cfg);
