@@ -3792,6 +3792,9 @@
       editor.on('load', function() {
         buildAboutPanel();
         if (aboutHiddenOnStartup()) return;
+        /* Se acabamos de importar, o modal com o relatório vai abrir logo após o
+           reload — não abrimos o painel Sobre por cima dele. */
+        try { if (sessionStorage.getItem('vcms360_import_report')) return; } catch (e) {}
         setTimeout(function() {
           editor.runCommand('cms-open-about');
         }, 300);
@@ -4085,14 +4088,29 @@
             const res  = await fetch('/api/import?action=commit', { method: 'POST', body: form });
             const json = await res.json();
             if (json.success) {
+              /* O reload é o que faz o canvas exibir o conteúdo importado, mas ele
+                 destruiria este modal. Então guardamos o relatório e reabrimos o
+                 modal logo após o editor recarregar (ver showImportReport), onde
+                 ele fica aberto até o usuário fechar. */
+              try {
+                sessionStorage.setItem('vcms360_import_report', JSON.stringify({
+                  imported: json.imported || [],
+                }));
+              } catch (e) {}
+
               wrap.innerHTML = '';
               const ok = document.createElement('div'); ok.style.cssText = 'padding:24px;display:flex;flex-direction:column;gap:12px;';
               ok.innerHTML = '<p class="imp-success">✅ Importação concluída com sucesso!</p>'
-                + '<p style="color:#9ca3af;font-size:13px;">' + json.imported.length + ' item(ns) importado(s).</p>'
-                + '<ul style="color:#9ca3af;font-size:12px;margin:0 0 8px 16px;">' + json.imported.map(function(i){ return '<li>'+i+'</li>'; }).join('') + '</ul>'
-                + '<p style="color:#fbbf24;font-size:12px;">Recarregue o editor para ver as alterações.</p>'
-                + '<button onclick="location.reload()" style="padding:8px 18px;background:#4f46e5;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;align-self:flex-start;">Recarregar agora</button>';
+                + '<p style="color:#9ca3af;font-size:13px;">🔄 Recarregando o editor para exibir o conteúdo importado...</p>';
               wrap.appendChild(ok);
+
+              /* Evita que um "salvamento" pendente do estado antigo sobrescreva
+                 o que acabou de ser importado logo após o reload. */
+              try { if (window.editor && editor.getDirtyCount) editor.clearDirtyCount && editor.clearDirtyCount(); } catch (e) {}
+
+              setTimeout(function () {
+                try { location.reload(); } catch (e) { location.href = location.href; }
+              }, 600);
             } else {
               footer.innerHTML = '<span style="color:#f87171;">Erro: ' + (json.error||'falha') + '</span>';
             }
@@ -4115,6 +4133,70 @@
       };
       input.click();
     }
+
+    /* ── Relatório da importação (reaberto após o reload automático) ───────────
+       O reload do editor é o que faz o canvas exibir o conteúdo importado, mas
+       ele fecharia o modal de resultado. Por isso o relatório é salvo em
+       sessionStorage antes de recarregar e o modal é reaberto aqui, permanecendo
+       aberto até o usuário fechá-lo (botão "Fechar" ou o X do modal). */
+    function showImportReport() {
+      let data = null;
+      try {
+        const raw = sessionStorage.getItem('vcms360_import_report');
+        if (!raw) return;
+        sessionStorage.removeItem('vcms360_import_report');  // exibe uma única vez
+        data = JSON.parse(raw);
+      } catch (e) { return; }
+      if (!data || !Array.isArray(data.imported)) return;
+
+      const items = data.imported;
+      const pages = items.filter(function (i) { return i.indexOf('page:') === 0; }).map(function (i) { return i.slice(5); });
+      const comps = items.filter(function (i) { return i.indexOf('component:') === 0; }).map(function (i) { return i.slice(10); });
+      const media = items.filter(function (i) { return i.indexOf('upload:') === 0; });
+
+      function section(title, arr) {
+        if (!arr.length) return '';
+        return '<div><div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">'
+          + title + ' (' + arr.length + ')</div>'
+          + '<div style="background:#0d0d1a;border:1px solid #2a2a3e;border-radius:6px;padding:8px 10px;max-height:150px;overflow-y:auto;'
+          + 'font-family:monospace;font-size:12px;color:#d4d4d4;line-height:1.7;">'
+          + arr.map(function (x) { return '• ' + x; }).join('<br>') + '</div></div>';
+      }
+
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'font-family:sans-serif;padding:20px 22px;display:flex;flex-direction:column;gap:10px;';
+      wrap.innerHTML =
+          '<p style="color:#34d399;font-weight:600;font-size:15px;margin:0;">✅ Importação concluída com sucesso!</p>'
+        + '<p style="color:#9ca3af;font-size:13px;margin:0 0 4px;">O canvas já foi recarregado com o conteúdo importado — '
+        + items.length + ' item(ns) no total.</p>'
+        + section('Páginas', pages)
+        + section('Componentes', comps)
+        + (media.length ? '<p style="color:#6b7280;font-size:12px;margin:4px 0 0;">🖼️ ' + media.length + ' arquivo(s) de mídia importado(s).</p>' : '');
+
+      const footer = document.createElement('div');
+      footer.style.cssText = 'display:flex;justify-content:flex-end;margin-top:14px;';
+      const btnClose = document.createElement('button');
+      btnClose.textContent = 'Fechar';
+      btnClose.style.cssText = 'padding:8px 20px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;';
+      btnClose.onmouseover = function () { btnClose.style.background = '#2563eb'; };
+      btnClose.onmouseout  = function () { btnClose.style.background = '#3b82f6'; };
+      btnClose.onclick = function () { editor.Modal.close(); };
+      footer.appendChild(btnClose);
+      wrap.appendChild(footer);
+
+      editor.Modal.setTitle('⬇️ Resultado da importação');
+      editor.Modal.setContent(wrap);
+      editor.Modal.open();
+      /* O modal da importação usa altura fixa (96vh); aqui devolvemos o tamanho
+         natural, já que o relatório é curto. */
+      setTimeout(function () {
+        const dlg = document.querySelector('.gjs-mdl-dialog');
+        if (dlg) { dlg.style.width = 'min(560px,95vw)'; dlg.style.height = 'auto'; dlg.style.maxHeight = '90vh'; }
+        const cont = document.querySelector('.gjs-mdl-content');
+        if (cont) { cont.style.padding = '0'; cont.style.overflow = 'auto'; }
+      }, 30);
+    }
+    editor.on('load', function () { setTimeout(showImportReport, 450); });
 
 
         // ── Build: abre modal com progresso em tempo real ────────────────────────
