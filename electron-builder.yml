@@ -1,0 +1,56 @@
+# Visual CMS 360° — configuração de empacotamento desktop (electron-builder)
+# Gera instaladores para Linux, Windows e macOS.
+#
+# Pré-requisito: rodar `npm run build` antes (os scripts dist:* já fazem isso),
+# para que dist/server e dist/client existam e sejam empacotados.
+
+appId: br.com.gersonlv.vcms360
+productName: Visual CMS 360
+
+directories:
+  output: dist-desktop        # instaladores gerados aqui (não confundir com dist/)
+  buildResources: build       # onde está o icon.png
+
+# asar desligado: o servidor precisa ler dist/client e node_modules como
+# arquivos reais em runtime (cópia de assets na exportação, módulos nativos).
+asar: false
+
+# O que entra no pacote. node_modules de produção é incluído automaticamente
+# pelo electron-builder; aqui garantimos o build, o wrapper e a semente.
+files:
+  - dist/**/*
+  - electron/**/*
+  - build/icon.png
+  - package.json
+
+# Reconstrói módulos nativos (ex.: sharp) para o ABI do Electron.
+npmRebuild: true
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Development
+  icon: build/icon.png
+  synopsis: Editor visual de sites e tours 360° (offline)
+  # Exigido pelo pacote .deb (também derivável do author, mas explícito é mais seguro).
+  maintainer: Gerson Luis Vertematti <gersonlv@gmail.com>
+
+win:
+  target:
+    - nsis
+  icon: build/icon.png
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Visual CMS 360
+
+mac:
+  target:
+    - dmg
+  category: public.app-category.developer-tools
+  icon: build/icon.png

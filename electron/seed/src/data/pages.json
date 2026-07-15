@@ -1,0 +1,7 @@
+{
+  "index": {
+    "html": "<div class=\"p-8 text-center\"><h1 class=\"text-3xl font-bold mb-4\">Start Building</h1><p class=\"text-gray-600\">Drag and drop elements here.</p></div>",
+    "css": "",
+    "_resetPlaceholder": true
+  }
+}

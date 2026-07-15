@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>Versão:</strong> 1.0.1 · <strong>Data de compilação:</strong> 2026-07-06
+  <strong>Versão:</strong> 1.0.2 · <strong>Data de compilação:</strong> 2026-07-15
 </p>
 
 <p align="center">
@@ -72,14 +72,31 @@ Gerson é **Educador Maker voluntário** do [Open Maker](https://www.dispensados
 
 ### Instalação
 
+O VCMS 360° pode rodar de duas formas: **de modo convencional no navegador** ou
+como **aplicação standalone** (Electron). Escolha o comando correspondente no
+lugar do `npm install`:
+
 ```bash
 git clone https://github.com/vertematti/VCMS360.git
 cd VCMS360
-npm install
+
+npm run setup:web       # apenas modo navegador — NÃO baixa o Electron
+# ou
+npm run setup:desktop   # instalação completa, com Electron (para gerar o app)
+```
+
+Depois, para o modo navegador, inicie o servidor de desenvolvimento:
+
+```bash
 npm run dev
 ```
 
 Acesse o editor em: **[http://localhost:4321/editor](http://localhost:4321/editor)**
+
+> 🖥️ **Aplicação standalone (Electron):** o VCMS 360° também pode ser empacotado
+> como aplicativo de desktop nativo (janela própria + instalador para
+> Linux/Windows/macOS), rodando o mesmo editor offline. Guia completo:
+> **[electron/README.pt-BR.md](electron/README.pt-BR.md)**.
 
 ### Scripts disponíveis
 
@@ -89,6 +106,11 @@ Acesse o editor em: **[http://localhost:4321/editor](http://localhost:4321/edito
 | `npm run build` | Compila o projeto SSR para `/dist` (`dist/server` + `dist/client`) |
 | `npm run preview` | Sobe localmente o build SSR de `/dist` para conferência |
 | `npm run export:static` | Gera um **site estático** em `/dist-static` para publicar em qualquer host |
+| `npm run setup:web` | Instala apenas o **modo navegador** (sem baixar o Electron) |
+| `npm run setup:desktop` | Instalação completa, **com Electron** (para gerar o app desktop) |
+| `npm run electron:dev` | Faz o build e abre o **app desktop** (Electron) para testar |
+| `npm run dist:linux` | Gera o instalador desktop (AppImage + `.deb`) em `/dist-desktop` |
+| `npm run dist:win` / `dist:mac` | Instalador para Windows (`.exe`) / macOS (`.dmg`) — veja o [guia do Electron](electron/README.pt-BR.md) |
 
 ---
 
@@ -197,13 +219,31 @@ VCMS360/
 │       │       ├── save.ts
 │       │       ├── load.ts
 │       │       └── delete.ts
+│       ├── resources/
+│       │   └── [...path].ts        # Serve imagens/recursos gravados em runtime
+│       ├── uploads/
+│       │   └── [...path].ts        # Serve uploads gravados em runtime
 │       └── [...slug].astro        # Renderização SSR das páginas publicadas
 ├── scripts/
 │   ├── copy-vendor.mjs            # Copia bibliotecas vendor do node_modules
 │   └── export-static.mjs          # Gera site estático em /dist-static
+├── electron/                      # App desktop (Electron)
+│   ├── main.cjs                   # Processo principal (janela + sobe o servidor)
+│   ├── lib.cjs                    # Utilitários (porta livre, seed, spawn)
+│   ├── seed/                      # Dados iniciais (copiados na 1ª execução)
+│   ├── README.md                  # Guia do app desktop (Inglês)
+│   └── README.pt-BR.md            # Guia do app desktop (Português)
+├── build/
+│   └── icon.png                   # Ícone do app desktop (1024×1024)
+├── samples/
+│   └── visualcms360-export-*.zip  # Projeto de exemplo para testar importação
 ├── astro.config.mjs               # Configuração do Astro/Vite
+├── electron-builder.yml           # Configuração de empacotamento desktop
+├── .npmrc                         # allow-git=all (dep transitiva via Git do A-Frame)
 ├── LICENSE                        # GNU GPL v3
 ├── NOTICE                         # Atribuições de terceiros
+├── README.md                      # Documentação (Inglês)
+├── README.pt-BR.md                # Documentação (Português)
 └── package.json
 ```
 
@@ -225,6 +265,8 @@ VCMS360/
 | [Cheerio](https://cheerio.js.org) | ^1.2 | MIT | Parser HTML server-side |
 | [jQuery](https://jquery.com) | ^3.7 | MIT | Interatividade nas páginas publicadas |
 | [Font Awesome](https://fontawesome.com) | ^6.5 | MIT + SIL OFL | Ícones |
+| [Electron](https://www.electronjs.org) | ^35.0 | MIT | Runtime do app desktop (build standalone) |
+| [electron-builder](https://www.electron.build) | ^26.0 | MIT | Instaladores desktop (Linux/Windows/macOS) |
 
 > As dependências de terceiros **mantêm suas licenças originais** (MIT e BSD-3-Clause).
 > A GPL v3 se aplica exclusivamente ao código original do Visual CMS 360°.

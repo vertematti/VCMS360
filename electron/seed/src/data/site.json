@@ -1,0 +1,17 @@
+{
+  "siteName": "Visual CMS 360°",
+  "baseUrl": "",
+  "defaultTitle": "Visual CMS 360°",
+  "titleTemplate": "%s",
+  "defaultDescription": "",
+  "defaultOgImage": "",
+  "lang": "pt-BR",
+  "author": "",
+  "twitterHandle": "",
+  "robotsDefault": "index,follow",
+  "organization": {
+    "name": "",
+    "logo": "",
+    "sameAs": []
+  }
+}

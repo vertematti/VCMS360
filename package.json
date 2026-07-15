@@ -1,7 +1,14 @@
 {
   "name": "visual-cms",
   "type": "module",
-  "version": "1.0.1",
+  "version": "1.0.2",
+  "description": "Editor visual de sites e tours 360°, offline (Visual CMS 360°).",
+  "homepage": "https://gersonlv.com.br/visual_cms_360",
+  "author": {
+    "name": "Gerson Luis Vertematti",
+    "email": "gersonlv@gmail.com"
+  },
+  "license": "GPL-3.0-or-later",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -14,7 +21,15 @@
     "preview": "astro preview",
     "astro": "astro",
     "export:static": "node scripts/export-static.mjs",
-    "postinstall": "node scripts/copy-vendor.mjs"
+    "postinstall": "node scripts/copy-vendor.mjs",
+    "electron": "electron .",
+    "electron:dev": "npm run build && electron .",
+    "dist": "npm run build && electron-builder",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "setup:web": "npm install --omit=dev",
+    "setup:desktop": "npm install"
   },
   "dependencies": {
     "@astrojs/node": "^11.0.2",
@@ -31,5 +46,10 @@
   "allowScripts": {
     "sharp@0.34.5": true,
     "esbuild@0.28.1": true
+  },
+  "main": "electron/main.cjs",
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.0"
   }
 }
