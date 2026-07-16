@@ -3034,14 +3034,96 @@
     editor.Commands.add('core:open-code', {
       run(ed) {
         const modal = ed.Modal;
-        const wrap = document.createElement('div');
-        wrap.style.cssText = 'display:flex;gap:0;width:860px;max-width:96vw;height:72vh;box-sizing:border-box;';
 
-        // ── Painel HTML ───────────────────────────────────────────────────────
+        // Dependências FIXAS já injetadas no <head> pelo Layout (referência + validação).
+        const HEAD_FIXED = [
+          { label: 'charset UTF-8',                                   test: /charset/i },
+          { label: 'viewport (responsivo)',                           test: /viewport/i },
+          { label: 'favicons — /favicon.ico, /favicon.svg',           test: /favicon|rel=["']?icon/i },
+          { label: 'Font Awesome — /vendor/fontawesome/css/all.min.css', test: /font-?awesome/i },
+          { label: 'jQuery — /vendor/jquery.min.js',                  test: /jquery/i },
+          { label: 'Tailwind CSS — compilado no global.css',          test: /tailwind/i },
+          { label: 'SEO/OG/Twitter/JSON-LD — via aba “SEO”',          test: null },
+        ];
+        // Carregadas sob demanda pelos tours 360° (não repetir manualmente).
+        const HEAD_RUNTIME = [
+          { label: 'Pannellum — foto 360° (carregado pelos tours)',   test: /pannellum/i },
+          { label: 'A-Frame — vídeo 360° (carregado pelos tours)',    test: /aframe|a-frame/i },
+        ];
+        const ALL_DEPS = HEAD_FIXED.concat(HEAD_RUNTIME);
+
+        // Estado SEO atual — MESMA fonte do campo "extraHead" da aba SEO.
+        const seoState = (editor._pendingPageSeo !== undefined)
+          ? editor._pendingPageSeo
+          : ((currentPageData && currentPageData.seo) || {});
+        const currentExtraHead = (seoState && seoState.extraHead) || '';
+
+        const outer = document.createElement('div');
+        outer.style.cssText = 'display:flex;flex-direction:column;width:960px;max-width:96vw;height:82vh;box-sizing:border-box;';
+
+        // ── Seção HEAD ────────────────────────────────────────────────────────
+        const headSection = document.createElement('div');
+        headSection.style.cssText = 'display:flex;flex-direction:column;border-bottom:2px solid #333;';
+        const headLabel = document.createElement('div');
+        headLabel.textContent = 'HEAD do HTML';
+        headLabel.style.cssText = 'padding:6px 12px;font-size:11px;font-weight:700;color:#34d399;background:#1a1a2e;letter-spacing:1px;';
+        headSection.appendChild(headLabel);
+
+        const headBody = document.createElement('div');
+        headBody.style.cssText = 'display:flex;gap:0;height:200px;';
+
+        // Referência read-only das dependências já presentes
+        const refPane = document.createElement('div');
+        refPane.style.cssText = 'width:340px;overflow:auto;background:#0d0d1a;border-right:1px solid #333;padding:8px 10px;font-family:monospace;font-size:11px;color:#9ca3af;line-height:1.55;';
+        const depLines = (arr) => arr.map((d) => '<div>✓ ' + d.label + '</div>').join('');
+        refPane.innerHTML =
+            '<div style="color:#6b7280;text-transform:uppercase;letter-spacing:.5px;font-size:10px;margin-bottom:5px;">Já no &lt;head&gt; (não repita)</div>'
+          + depLines(HEAD_FIXED)
+          + '<div style="color:#6b7280;text-transform:uppercase;letter-spacing:.5px;font-size:10px;margin:8px 0 5px;">Sob demanda (tours 360°)</div>'
+          + depLines(HEAD_RUNTIME);
+
+        // Editor do HEAD adicional (bound ao extraHead) + avisos de validação
+        const customPane = document.createElement('div');
+        customPane.style.cssText = 'flex:1;display:flex;flex-direction:column;min-width:0;';
+        const customHint = document.createElement('div');
+        customHint.style.cssText = 'padding:5px 10px;font-size:11px;color:#9ca3af;background:#141425;';
+        customHint.innerHTML = 'Adicione o que faltar (meta, fontes, CSS/JS externos…). Vai para o &lt;head&gt; ao publicar e é salvo junto com a página.';
+        const headArea = document.createElement('textarea');
+        headArea.value = currentExtraHead;
+        headArea.spellcheck = false;
+        headArea.placeholder = '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">\n<meta name="theme-color" content="#0d0d1a">';
+        headArea.style.cssText = 'flex:1;background:#0d0d1a;color:#d4d4d4;border:none;padding:10px 12px;font-size:12px;font-family:monospace;resize:none;outline:none;line-height:1.5;';
+        const warnBox = document.createElement('div');
+        warnBox.style.cssText = 'font-size:11px;color:#fbbf24;background:#141425;line-height:1.4;';
+        const validateHead = () => {
+          const val = (headArea.value || '').toLowerCase();
+          const dups = ALL_DEPS.filter((d) => d.test && d.test.test(val));
+          if (dups.length) {
+            warnBox.style.padding = '5px 10px';
+            warnBox.innerHTML = '⚠ Já incluído automaticamente: <strong>' + dups.map((d) => d.label.split(' —')[0].split(' (')[0]).join(', ') + '</strong> — evite duplicar.';
+          } else {
+            warnBox.style.padding = '0 10px';
+            warnBox.innerHTML = '';
+          }
+        };
+        headArea.addEventListener('input', validateHead);
+        customPane.appendChild(customHint);
+        customPane.appendChild(headArea);
+        customPane.appendChild(warnBox);
+
+        headBody.appendChild(refPane);
+        headBody.appendChild(customPane);
+        headSection.appendChild(headBody);
+
+        // ── BODY + CSS (lado a lado) ──────────────────────────────────────────
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'flex:1;display:flex;gap:0;min-height:0;box-sizing:border-box;';
+
+        // Painel BODY (antigo "HTML")
         const htmlPane = document.createElement('div');
-        htmlPane.style.cssText = 'flex:1;display:flex;flex-direction:column;border-right:1px solid #333;';
+        htmlPane.style.cssText = 'flex:1;display:flex;flex-direction:column;border-right:1px solid #333;min-width:0;';
         const htmlLabel = document.createElement('div');
-        htmlLabel.textContent = 'HTML';
+        htmlLabel.textContent = 'BODY do HTML';
         htmlLabel.style.cssText = 'padding:6px 12px;font-size:11px;font-weight:700;color:#f59e0b;background:#1a1a2e;letter-spacing:1px;';
         const htmlArea = document.createElement('textarea');
         htmlArea.value = formatHTML(ed.getHtml());
@@ -3050,9 +3132,9 @@
         htmlPane.appendChild(htmlLabel);
         htmlPane.appendChild(htmlArea);
 
-        // ── Painel CSS ────────────────────────────────────────────────────────
+        // Painel CSS
         const cssPane = document.createElement('div');
-        cssPane.style.cssText = 'flex:1;display:flex;flex-direction:column;';
+        cssPane.style.cssText = 'flex:1;display:flex;flex-direction:column;min-width:0;';
         const cssLabel = document.createElement('div');
         cssLabel.textContent = 'CSS';
         cssLabel.style.cssText = 'padding:6px 12px;font-size:11px;font-weight:700;color:#818cf8;background:#1a1a2e;letter-spacing:1px;';
@@ -3066,11 +3148,10 @@
         wrap.appendChild(htmlPane);
         wrap.appendChild(cssPane);
 
-        // ── Footer ────────────────────────────────────────────────────────────
-        const outer = document.createElement('div');
-        outer.style.cssText = 'display:flex;flex-direction:column;width:860px;max-width:96vw;';
+        outer.appendChild(headSection);
         outer.appendChild(wrap);
 
+        // ── Footer ────────────────────────────────────────────────────────────
         const footer = document.createElement('div');
         footer.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;padding:10px 0 2px;';
 
@@ -3086,6 +3167,16 @@
           try {
             ed.setComponents(htmlArea.value);
             ed.setStyle(cssArea.value);
+            // HEAD adicional → mesmo campo "extraHead" da aba SEO (fonte única).
+            // Salvo com a página; injetado no <head> ao publicar via resolveSeo().
+            const base = (editor._pendingPageSeo !== undefined)
+              ? editor._pendingPageSeo
+              : ((currentPageData && currentPageData.seo) || {});
+            const newHead = (headArea.value || '').trim();
+            editor._pendingPageSeo = Object.assign({}, base, { extraHead: newHead });
+            if (newHead !== (currentExtraHead || '').trim() && typeof showToast === 'function') {
+              showToast('HEAD aplicado. Salve a página para persistir.', 'success');
+            }
             modal.close();
           } catch(err) {
             alert('Erro ao aplicar: ' + err.message);
@@ -3096,7 +3187,8 @@
         footer.appendChild(applyBtn);
         outer.appendChild(footer);
 
-        modal.setTitle('Editor de Código');
+        validateHead();
+        modal.setTitle('Editor de Código — HEAD · BODY · CSS');
         modal.setContent(outer);
         modal.open();
       }
@@ -3277,7 +3369,7 @@
         label: '',
         className: 'gjs-pn-btn fa fa-code',
         command: 'import-code',
-        attributes: { title: 'Importar / Editar HTML & CSS' },
+        attributes: { title: 'Importar / Editar HEAD, BODY & CSS' },
         active: false,
       }
     ]);
@@ -4598,7 +4690,7 @@
         const wrap = document.createElement('div');
         wrap.id = 'imp-modal-wrap';
 
-        function makeSection(label, langTag, color, placeholder='') {
+        function makeSection(label, langTag, color, placeholder='', key) {
           const sec = document.createElement('div');
           sec.className = 'imp-section';
 
@@ -4609,7 +4701,7 @@
           const edWrap = document.createElement('div');
           edWrap.className = 'imp-editor-wrap';
 
-          const ed2 = makeEditor(`imp-${langTag}`, langTag, placeholder);
+          const ed2 = makeEditor(`imp-${key||langTag}`, langTag, placeholder);
           ed2.style.width = '100%';
           edWrap.appendChild(ed2);
 
@@ -4623,12 +4715,47 @@
           return sec;
         }
 
-        const secHtml = makeSection('HTML', 'html', '#4ec9b0');
-        const secCss  = makeSection('CSS',  'css',  '#d7ba7d');
-        const secJs   = makeSection('JavaScript', 'js', '#c586c0', '// JavaScript puro (sem jQuery, sem tags <script>)');
-        const secJq   = makeSection('jQuery', 'js', '#2563eb', '// Codigo jQuery - sera envolvido em $(function(){ ... }) na pagina');
+        // Dependências já injetadas no <head> — referência e validação anti-duplicata.
+        const HEAD_DEPS = [
+          { label: 'charset',                  test: /charset/i },
+          { label: 'viewport',                 test: /viewport/i },
+          { label: 'favicons',                 test: /favicon|rel=["']?icon/i },
+          { label: 'Font Awesome',             test: /font-?awesome/i },
+          { label: 'jQuery',                   test: /jquery/i },
+          { label: 'Tailwind',                 test: /tailwind/i },
+          { label: 'SEO/OG/JSON-LD (aba SEO)', test: null },
+          { label: 'Pannellum (tours 360°)',   test: /pannellum/i },
+          { label: 'A-Frame (tours 360°)',     test: /aframe|a-frame/i },
+        ];
 
-        // Start CSS, JS and jQuery collapsed
+        const secHead = makeSection('HEAD do HTML', 'html', '#34d399',
+          '<!-- Adicione o que faltar: fontes, meta tags, CSS/JS externos… -->\n<meta name="theme-color" content="#0d0d1a">', 'head');
+        const secHtml = makeSection('BODY do HTML', 'html', '#4ec9b0', '', 'body');
+        const secCss  = makeSection('CSS',  'css',  '#d7ba7d', '', 'css');
+        const secJs   = makeSection('JavaScript', 'js', '#c586c0', '// JavaScript puro (sem jQuery, sem tags <script>)', 'js');
+        const secJq   = makeSection('jQuery', 'js', '#2563eb', '// Codigo jQuery - sera envolvido em $(function(){ ... }) na pagina', 'jquery');
+
+        // Referência das dependências já incluídas + aviso de duplicata (dentro da seção HEAD)
+        const headBox = secHead.querySelector('.imp-editor-wrap');
+        headBox.style.flexDirection = 'column';
+        const headRef = document.createElement('div');
+        headRef.style.cssText = 'flex-shrink:0;background:#0d0d1a;border:1px solid #333;border-radius:4px;padding:6px 8px;margin-bottom:4px;font:11px/1.5 monospace;color:#9ca3af;';
+        headRef.innerHTML = '<span style="color:#6b7280;">Já incluído no &lt;head&gt; (não repita):</span> '
+          + HEAD_DEPS.map(function(d){ return d.label.split(' (')[0]; }).join(' · ');
+        const headWarn = document.createElement('div');
+        headWarn.style.cssText = 'flex-shrink:0;font:11px/1.4 sans-serif;color:#fbbf24;margin-top:4px;';
+        headBox.insertBefore(headRef, headBox.firstChild);
+        headBox.appendChild(headWarn);
+        const validateHead = function(){
+          const val = (secHead._editor._ta.value || '').toLowerCase();
+          const dups = HEAD_DEPS.filter(function(d){ return d.test && d.test.test(val); });
+          headWarn.innerHTML = dups.length
+            ? '⚠ Já incluído automaticamente: <strong>' + dups.map(function(d){ return d.label.split(' (')[0]; }).join(', ') + '</strong> — evite duplicar.'
+            : '';
+        };
+        secHead._editor._ta.addEventListener('input', validateHead);
+
+        // Estado inicial: HEAD e BODY abertos; CSS/JS/jQuery recolhidos
         secCss.classList.add('collapsed');
         secJs.classList.add('collapsed');
         secJq.classList.add('collapsed');
@@ -4637,6 +4764,7 @@
         applyBtn.id = 'imp-apply-btn';
         applyBtn.textContent = '\u2713 Aplicar';
 
+        wrap.appendChild(secHead);
         wrap.appendChild(secHtml);
         wrap.appendChild(secCss);
         wrap.appendChild(secJs);
@@ -4670,10 +4798,18 @@
           secJs._editor._ta.value = split.js;
           secJq._editor._ta.value = split.jquery;
         }
+        // Carregar HEAD adicional — mesmo campo "extraHead" da aba SEO (fonte única)
+        const _seoState = (editor._pendingPageSeo !== undefined)
+          ? editor._pendingPageSeo
+          : ((typeof currentPageData !== 'undefined' && currentPageData && currentPageData.seo) || {});
+        secHead._editor._ta.value = (_seoState && _seoState.extraHead) || '';
+
+        secHead._editor._render();
         secHtml._editor._render();
         secCss._editor._render();
         secJs._editor._render();
         secJq._editor._render();
+        validateHead();
 
         applyBtn.onclick = () => {
           let html = secHtml._editor._ta.value;
@@ -4687,6 +4823,17 @@
           ed.setStyle(secCss._editor._ta.value);
           ed._pendingPageJs = js;
           ed._pendingPageJquery = jq;
+          // HEAD adicional → mesmo campo "extraHead" da aba SEO; salvo com a página
+          // e injetado no <head> ao publicar via resolveSeo().
+          const _newHead = (secHead._editor._ta.value || '').trim();
+          const _base = (editor._pendingPageSeo !== undefined)
+            ? editor._pendingPageSeo
+            : ((typeof currentPageData !== 'undefined' && currentPageData && currentPageData.seo) || {});
+          const _prevHead = ((_base && _base.extraHead) || '').trim();
+          editor._pendingPageSeo = Object.assign({}, _base, { extraHead: _newHead });
+          if (_newHead !== _prevHead && typeof showToast === 'function') {
+            showToast('HEAD aplicado. Salve a página para persistir.', 'success');
+          }
           ed.Modal.close();
         };
 
