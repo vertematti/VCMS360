@@ -32,10 +32,10 @@
     "setup:desktop": "npm install"
   },
   "dependencies": {
-    "@astrojs/node": "^11.0.2",
+    "@astrojs/node": "^11.1.0",
     "@tailwindcss/vite": "^4.2.4",
     "aframe": "^1.6.0",
-    "astro": "^7.0.6",
+    "astro": "^7.2.0",
     "cheerio": "^1.2.0",
     "grapesjs": "^0.22.15",
     "grapesjs-blocks-basic": "^1.0.2",
@@ -45,7 +45,9 @@
   },
   "allowScripts": {
     "sharp@0.34.5": true,
-    "esbuild@0.28.1": true
+    "esbuild@0.28.1": true,
+    "electron@35.7.5": true,
+    "electron-winstaller@5.4.0": true
   },
   "main": "electron/main.cjs",
   "devDependencies": {
