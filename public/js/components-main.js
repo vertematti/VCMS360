@@ -400,6 +400,63 @@
       }
     });
 
+    // ── Confirmação de sincronização de páginas ─────────────────────────────────
+    // Mostra, antes de gravar, em quais páginas o componente está aplicado e só
+    // atualiza o HTML/CSS delas se o usuário confirmar. Reaproveita o Modal do
+    // GrapesJS (mesmo usado no "Editor de Código" acima) para manter a
+    // aparência consistente com o resto do editor.
+    function confirmComponentSync(name, slugs) {
+      return new Promise((resolve) => {
+        const list = slugs
+          .map((s) => `<li style="margin:2px 0;">${s === 'index' ? 'Página inicial (/)' : '/' + s}</li>`)
+          .join('');
+
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'padding:4px 2px;font-size:13px;line-height:1.55;color:#e8e8ee;';
+        wrap.innerHTML = `
+          <p style="margin:0 0 10px;">
+            O componente <strong>${name}</strong> está aplicado em
+            <strong>${slugs.length}</strong> página(s). Ao confirmar, o HTML e o
+            CSS gravados dessas páginas serão atualizados para a versão nova do
+            componente — sem duplicar código, imagens, classes ou funções.
+          </p>
+          <p style="margin:0 0 10px;color:#aeaebb;">
+            O JS e o jQuery do componente não precisam desse mesmo passo:
+            eles nunca ficam gravados dentro da página — são sempre lidos
+            direto da versão mais recente do componente a cada carregamento,
+            então já saem atualizados automaticamente, sem risco de duplicar.
+          </p>
+          <ul style="margin:0 0 14px;padding-left:18px;max-height:200px;overflow:auto;color:#e8e8ee;">${list}</ul>
+          <div style="display:flex;justify-content:flex-end;gap:8px;">
+            <button type="button" id="comp-sync-cancel"
+              style="padding:6px 14px;border:1px solid #ccc;background:#fff;color:#333;border-radius:4px;cursor:pointer;">
+              Cancelar
+            </button>
+            <button type="button" id="comp-sync-confirm"
+              style="padding:6px 14px;border:none;background:#22c55e;color:#fff;border-radius:4px;cursor:pointer;">
+              Atualizar ${slugs.length} página(s)
+            </button>
+          </div>
+        `;
+
+        editor.Modal.setTitle('🔗 Atualizar páginas que usam este componente?');
+        editor.Modal.setContent(wrap);
+        editor.Modal.open();
+
+        let done = false;
+        function finish(val) {
+          if (done) return;
+          done = true;
+          editor.Modal.close();
+          resolve(val);
+        }
+        wrap.querySelector('#comp-sync-cancel').onclick = () => finish(false);
+        wrap.querySelector('#comp-sync-confirm').onclick = () => finish(true);
+        // Fechou o modal (X, clique fora, ESC) sem escolher = tratar como cancelado.
+        editor.once('modal:close', () => finish(false));
+      });
+    }
+
     // ── Save component ─────────────────────────────────────────────────────────
     async function saveComponent(name) {
       // Separar HTML limpo do JS para injeção correta nas páginas
@@ -441,13 +498,32 @@
         css:         editor.getCss(),
         projectData: editor.getProjectData()
       };
-      const res = await fetch('/api/components/save', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(payload)
-      });
+
+      async function trySave(confirmed) {
+        return fetch('/api/components/save', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(confirmed ? { ...payload, confirmed: true } : payload)
+        });
+      }
+
+      // 1ª tentativa: sem confirmar. Se o componente já estiver em uso em
+      // alguma página, o servidor devolve `requiresConfirmation` + a lista de
+      // páginas, sem gravar nada ainda.
+      let res    = await trySave(false);
+      let result = await res.json().catch(() => ({}));
+
+      if (result.requiresConfirmation) {
+        const proceed = await confirmComponentSync(name, result.affectedPages || []);
+        if (!proceed) {
+          showToast('Alterações não salvas — nenhuma página foi modificada.', 'info');
+          return;
+        }
+        res    = await trySave(true);
+        result = await res.json().catch(() => ({}));
+      }
+
       if (res.ok) {
-        const result = await res.json().catch(() => ({}));
         currentComponent = name;
         await loadLibrary();
         const affected = result.affectedPages || [];

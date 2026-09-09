@@ -18,6 +18,19 @@ export default defineConfig({
     build: {
       target: 'es2020',   // permite async/await, for-of, spread, matchAll
     },
+    optimizeDeps: {
+      // O scanner automático de dependências (baseado em Rolldown, no Vite 8)
+      // quebra ao tentar analisar os módulos virtuais gerados a partir do
+      // frontmatter dos arquivos .astro deste projeto ("Failed to run
+      // dependency scan"). Isso não quebra o site (o Vite cai para
+      // bundling sob demanda), mas gera esse erro no console e deixa o
+      // primeiro carregamento de cada página um pouco mais lento.
+      // Desativando a varredura automática e listando manualmente as
+      // dependências npm usadas no server (cheerio), evitamos que o
+      // scanner rode e o erro desaparece.
+      noDiscovery: true,
+      include: ['cheerio'],
+    },
     server: {
       watch: {
         // Ignorar arquivos de dados gravados em runtime pela API.

@@ -5,6 +5,7 @@ import type { APIRoute } from 'astro';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { broadcast } from '../events';
+import { findPagesUsingComponent, syncPagesForComponent, type PageRecord } from '../../../lib/componentSync';
 
 export const prerender = false;
 
@@ -19,7 +20,7 @@ async function readComponents(): Promise<Record<string, any>> {
   }
 }
 
-async function readPages(): Promise<Record<string, any>> {
+async function readPages(): Promise<Record<string, PageRecord>> {
   try {
     return JSON.parse(await fs.readFile(pagesPath(), 'utf-8'));
   } catch {
@@ -27,38 +28,35 @@ async function readPages(): Promise<Record<string, any>> {
   }
 }
 
-// Marca as páginas que usam este componente como "dirty" para re-render.
-// Como o [...slug].astro lê componentes a cada request, não precisamos
-// reescrever o HTML das páginas — apenas registrar timestamp de sync.
-async function touchPagesUsingComponent(componentName: string): Promise<string[]> {
-  const pages = await readPages();
-  const affected: string[] = [];
-  let changed = false;
-  for (const [slug, page] of Object.entries(pages)) {
-    const html = (page as any).html || '';
-    // Detecta uso do componente por data-component-id
-    if (html.includes(`data-component-id="${componentName}"`)) {
-      affected.push(slug);
-      (page as any).componentsSyncedAt = new Date().toISOString();
-      changed = true;
-    }
-  }
-  if (changed) {
-    await fs.writeFile(pagesPath(), JSON.stringify(pages, null, 2), 'utf-8');
-  }
-  return affected;
-}
-
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { name, html, js, jquery, css, projectData } = body;
+    const { name, html, js, jquery, css, projectData, confirmed } = body;
 
     if (!name || typeof name !== 'string') {
       return new Response(JSON.stringify({ error: 'name is required' }), { status: 400 });
     }
 
+    const pages = await readPages();
+    const usingPages = findPagesUsingComponent(pages, name);
+
+    // Se o componente já está em uso em alguma página e o front-end ainda
+    // não confirmou a sincronização, devolvemos a lista de páginas afetadas
+    // SEM gravar nada — o editor mostra a janela de confirmação e só reenvia
+    // esta mesma chamada com `confirmed: true` se o usuário aceitar.
+    if (usingPages.length > 0 && !confirmed) {
+      return new Response(
+        JSON.stringify({
+          requiresConfirmation: true,
+          affectedPages: usingPages.map((p) => p.slug),
+        }),
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const components = await readComponents();
+    const oldCss = components[name]?.css || '';
+
     components[name] = {
       name,
       html: html || '',
@@ -71,10 +69,23 @@ export const POST: APIRoute = async ({ request }) => {
 
     await fs.writeFile(filePath(), JSON.stringify(components, null, 2), 'utf-8');
 
-    // Varrer páginas que usam este componente e marcá-las para re-sync
-    const affectedPages = await touchPagesUsingComponent(name);
+    // Sincroniza de verdade o HTML e o CSS gravados de cada página afetada
+    // (troca o miolo do wrapper [data-component-id] e substitui o bloco de
+    // CSS do componente, sem duplicar — ver src/lib/componentSync.ts).
+    const affectedPages = syncPagesForComponent(
+      pages,
+      name,
+      oldCss,
+      components[name].html,
+      components[name].css
+    );
 
-    // Broadcast real-time update to all connected editors
+    if (affectedPages.length > 0) {
+      await fs.writeFile(pagesPath(), JSON.stringify(pages, null, 2), 'utf-8');
+    }
+
+    // Broadcast real-time update to all connected editors (mantém os
+    // canvases abertos em sincronia imediata, além do que já foi gravado).
     broadcast('component:updated', {
       name,
       html: components[name].html,

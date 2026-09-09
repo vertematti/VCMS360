@@ -2869,10 +2869,33 @@
         updateContent() {
           const compId = this.getAttributes()['data-component-id'];
           if (compId && savedComponents[compId]) {
-            const css = savedComponents[compId].css || '';
+            const css  = savedComponents[compId].css  || '';
             const html = savedComponents[compId].html || '';
-            this.components(`<style>${css}</style>${html}`);
+
+            // Remove as regras de CSS aplicadas por uma atualização ANTERIOR
+            // deste mesmo componente (marcadas com _vcmsComp) antes de
+            // aplicar as novas. Sem isso, embutir a CSS como um <style>
+            // dentro do HTML (como era feito antes) só ACRESCENTA regras no
+            // CssComposer do editor a cada updateContent() — nunca remove as
+            // antigas — então o preview do editor (e o CSS exportado por
+            // editor.getCss() na hora de salvar a página) ficava com uma
+            // mistura do CSS velho e do novo, fazendo a atualização do
+            // componente parecer que "não funcionou".
+            const cc = editor.Css;
+            const stale = cc.getRules().filter((r) => r.get('_vcmsComp') === compId);
+            if (stale.length) cc.remove(stale);
+
+            // HTML puro — sem <style> embutido. A CSS é aplicada logo abaixo
+            // via API própria do CssComposer (addRules), não pelo parser de
+            // HTML: chamado num componente já existente, ele nunca limpa
+            // regras antigas sozinho.
+            this.components(html);
             this.get('components').each(child => lockComponent(child));
+
+            if (css.trim()) {
+              const added = cc.addRules(css) || [];
+              added.forEach((r) => r.set && r.set('_vcmsComp', compId));
+            }
           }
         }
       }
@@ -5116,9 +5139,18 @@
         } catch (e) {}
       });
 
-      // Load pages and components
-      await loadPage(currentSlug);
+      // Load components ANTES da página: cada componente compartilhado
+      // ([data-component-id]) busca seu conteúdo mais recente em
+      // `savedComponents` assim que é reconstruído a partir do projectData
+      // salvo (ver DomComponents.addType('shared-component').updateContent).
+      // Se `loadPage` rodasse primeiro, `savedComponents` ainda estaria
+      // vazio nesse momento e o componente ficaria com o snapshot antigo
+      // (congelado desde o último save da página) até o usuário trocar de
+      // página manualmente no combo — forçando um novo loadPage() já com
+      // `savedComponents` pronto. Invertendo a ordem, a página já nasce
+      // com a versão mais atual de todos os componentes aplicados.
       await loadComponentBlocks();
+      await loadPage(currentSlug);
       updateUI();
 
       // Sincroniza o Asset Manager com as imagens reais do servidor (public/resources),

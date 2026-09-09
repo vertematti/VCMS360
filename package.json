@@ -13,7 +13,7 @@
     "node": ">=22.12.0"
   },
   "overrides": {
-    "vite": "^8"
+    "vite": "8.2.2"
   },
   "scripts": {
     "dev": "astro dev",
@@ -32,10 +32,10 @@
     "setup:desktop": "npm install"
   },
   "dependencies": {
-    "@astrojs/node": "^11.1.0",
+    "@astrojs/node": "^11.1.5",
     "@tailwindcss/vite": "^4.2.4",
-    "aframe": "^1.6.0",
-    "astro": "^7.2.0",
+    "aframe": "^1.8.0",
+    "astro": "^7.3.2",
     "cheerio": "^1.2.0",
     "grapesjs": "^0.22.15",
     "grapesjs-blocks-basic": "^1.0.2",
@@ -45,13 +45,13 @@
   },
   "allowScripts": {
     "sharp@0.34.5": true,
-    "esbuild@0.28.1": true,
     "electron@35.7.5": true,
-    "electron-winstaller@5.4.0": true
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.28.2": true
   },
   "main": "electron/main.cjs",
   "devDependencies": {
-    "electron": "^35.0.0",
+    "electron": "^44.2.0",
     "electron-builder": "^26.0.0"
   }
 }
