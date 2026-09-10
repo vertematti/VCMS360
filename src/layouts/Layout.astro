@@ -25,6 +25,11 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
   <!-- jQuery local -->
   <script is:inline src="/vendor/jquery.min.js"></script>
+  <!-- theme-change: liga os controles de alternância de tema DaisyUI
+       (data-toggle-theme / data-set-theme), persistindo a escolha do
+       visitante no localStorage. Roda cedo, antes do <slot/>, e já se
+       auto-inicializa sozinho ao carregar. -->
+  <script is:inline src="/vendor/theme-change/theme-change.js"></script>
   <!-- Tailwind local (CDN-play via script) -->
   <script is:inline>
     /* Garantir que Tailwind via script funcione no site publicado */

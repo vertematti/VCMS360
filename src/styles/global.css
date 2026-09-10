@@ -1,5 +1,32 @@
 @import "tailwindcss";
+
+/* DaisyUI como plugin do Tailwind v4 (config via CSS, sem tailwind.config.js).
+   Isso faz o build (npm run build / export:static) gerar de verdade o CSS
+   dos componentes DaisyUI usados (.btn, .card, .modal, etc.) junto com o
+   resto do Tailwind, já otimizado/purgado — igual a qualquer outra classe.
+
+   Registramos "light" como padrão e "dark" disponível — mas SEM o flag
+   --prefersdark. Isso é proposital: por padrão o DaisyUI troca de tema
+   sozinho conforme a preferência do sistema operacional do visitante
+   (prefers-color-scheme), reescrevendo até a cor de fundo/texto do <body>
+   mesmo em páginas sem nenhuma classe DaisyUI — o que já causou uma
+   inconsistência entre o site publicado (ficava escuro pra visitantes com
+   o SO no modo escuro) e o canvas do editor (sempre claro). Aqui o tema
+   "dark" fica disponível só para troca EXPLÍCITA e intencional pelo
+   visitante, via o controle de tema no Header (biblioteca `theme-change`,
+   ver Layout.astro), nunca disparado sozinho pelo SO. */
+@plugin "daisyui" {
+  themes: light --default, dark;
+}
+
+/* Onde o Tailwind (e o DaisyUI, que reaproveita esse mesmo scanner) deve
+   procurar por classes usadas: por padrão ele só varre arquivos-fonte do
+   projeto (.astro, .html, etc.), mas o conteúdo das páginas e dos
+   componentes reutilizáveis deste CMS vive em JSON, fora desse escopo.
+   Sem isso, classes usadas só dentro de uma página ou de um componente
+   salvo seriam descartadas ("purgadas") do CSS final do build. */
 @source "../data/pages.json";
+@source "../data/components.json";
 
 /* ───────────────────────────────────────────────────────────────────────────
    Utilitário: BLUR DINÂMICO de fundo (desfoca SÓ a imagem de fundo, não o texto)

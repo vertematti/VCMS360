@@ -50,8 +50,20 @@
           storageManager: false,
           allowScripts: 1,
           canvas: {
-            scripts: [window.location.origin + '/vendor/jquery.min.js'],
-            styles:  [window.location.origin + '/vendor/fontawesome/css/all-canvas.css'],
+            scripts: [
+              window.location.origin + '/vendor/jquery.min.js',
+              window.location.origin + '/vendor/theme-change/theme-change.js',
+            ],
+            styles:  [
+              window.location.origin + '/vendor/fontawesome/css/all-canvas.css',
+              // CSS do DaisyUI vendorizada localmente (ver scripts/copy-vendor.mjs),
+              // pra que os componentes DaisyUI (.btn, .card, .modal, etc.) já
+              // apareçam estilizados dentro do canvas do editor, do mesmo jeito
+              // que aparecem no site publicado (que usa o DaisyUI de verdade,
+              // compilado junto com o Tailwind via @plugin "daisyui" no
+              // global.css). Não depende de internet — funciona offline/Electron.
+              window.location.origin + '/vendor/daisyui/daisyui.css',
+            ],
           },
           plugins: cfg.plugins,
           pluginsOpts: {
@@ -205,6 +217,22 @@
         '<p>Verifique o console para mais detalhes.</p></div>';
       throw new Error('GrapesJS failed to initialize');
     }
+
+    // ── Blocos DaisyUI ───────────────────────────────────────────────────────
+    // Registra os blocos definidos em daisyui-blocks.js (carregado antes deste
+    // arquivo) numa categoria própria "DaisyUI" no painel de blocos, para que
+    // o usuário possa arrastar componentes prontos (botão, card, navbar, modal,
+    // etc.) direto para a página.
+    (function registerDaisyUIBlocks() {
+      const blocks = window.VCMS_DAISYUI_BLOCKS || [];
+      blocks.forEach((b, i) => {
+        editor.BlockManager.add(b.id, {
+          label: `${b.media || ''} ${b.label}`.trim(),
+          category: { label: 'DaisyUI', order: 6 },
+          content: b.content,
+        });
+      });
+    })();
 
     // ══════════════════════════════════════════════════════════════════════════
     // ── Virtual Tour 360° Component (Pannellum)
@@ -2844,6 +2872,21 @@
 
     // ── Shared Component Type ────────────────────────────────────────────────
     editor.DomComponents.addType('shared-component', {
+      // Reconhece automaticamente qualquer <div data-component-id="..."> vindo
+      // de HTML "cru" (editor.setComponents(html)) — usado quando a página
+      // ainda não tem projectData salvo (ex.: páginas criadas via API/script,
+      // não pelo editor visual) — e promove pro tipo certo. Sem isso, esse
+      // caminho de carregamento (fallback de páginas sem projectData) mostra
+      // o componente "congelado" (o HTML estático de quando a página foi
+      // criada), sem receber atualizações ao vivo quando o componente é
+      // editado depois — só o carregamento via projectData (páginas
+      // editadas ao menos uma vez no editor visual, onde o bloco foi
+      // arrastado com o tipo já explícito) tinha esse comportamento correto.
+      isComponent: (el) => {
+        if (el.tagName === 'DIV' && el.getAttribute && el.getAttribute('data-component-id')) {
+          return { type: 'shared-component' };
+        }
+      },
       model: {
         defaults: {
           name: 'Componente Vinculado',

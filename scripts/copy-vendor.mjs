@@ -63,6 +63,28 @@ const files = [
     dest:  resolve(dest, 'pannellum.min.css'),
     label: 'pannellum → pannellum.min.css',
   },
+  {
+    // CSS pronta do DaisyUI (mesma usada oficialmente via CDN:
+    // cdn.jsdelivr.net/npm/daisyui@5), vendorizada localmente para uso
+    // offline dentro do canvas do editor GrapesJS (ver editor-main.js /
+    // components-main.js). Não é usada no site publicado — lá o DaisyUI
+    // entra de verdade via @plugin "daisyui" no global.css, compilado pelo
+    // Tailwind (ver astro.config.mjs / src/styles/global.css).
+    src:   resolve(root, 'node_modules', 'daisyui', 'daisyui.css'),
+    dest:  resolve(dest, 'daisyui', 'daisyui.css'),
+    label: 'daisyui → daisyui/daisyui.css',
+  },
+  {
+    // theme-change: liga os controles de alternância de tema (o toggle
+    // light/dark do Header DaisyUI), tanto no site publicado (incluído via
+    // Layout.astro) quanto no canvas do editor GrapesJS (pra já poder
+    // testar o toggle sem sair do editor). Build global pronta pra
+    // <script> simples — já se auto-inicializa ao carregar
+    // (ver node_modules/theme-change/index.js).
+    src:   resolve(root, 'node_modules', 'theme-change', 'index.js'),
+    dest:  resolve(dest, 'theme-change', 'theme-change.js'),
+    label: 'theme-change → theme-change/theme-change.js',
+  },
 ];
 
 for (const file of files) {
@@ -72,6 +94,7 @@ for (const file of files) {
     continue;
   }
   try {
+    mkdirSync(dirname(file.dest), { recursive: true });
     copyFileSync(file.src, file.dest);
     console.log(`  ✓ ${file.label}`);
     ok++;

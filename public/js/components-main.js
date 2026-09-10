@@ -72,8 +72,15 @@
           allowScripts:   1,
           plugins:        cfg.plugins,
           canvas: {
-            scripts: [window.location.origin + '/vendor/jquery.min.js'],
-            styles:  [window.location.origin + '/vendor/fontawesome/css/all-canvas.css'],
+            scripts: [
+              window.location.origin + '/vendor/jquery.min.js',
+              window.location.origin + '/vendor/theme-change/theme-change.js',
+            ],
+            styles:  [
+              window.location.origin + '/vendor/fontawesome/css/all-canvas.css',
+              // Ver comentário equivalente em editor-main.js.
+              window.location.origin + '/vendor/daisyui/daisyui.css',
+            ],
           },
           pluginsOpts: {
             'grapesjs-tailwind': {},
@@ -213,6 +220,21 @@
         '<p>Verifique o console para mais detalhes.</p></div>';
       throw new Error('GrapesJS failed to initialize');
     }
+
+    // ── Blocos DaisyUI ───────────────────────────────────────────────────────
+    // Mesma biblioteca de blocos usada no editor de páginas (ver
+    // daisyui-blocks.js e o comentário equivalente em editor-main.js) — aqui
+    // também é útil para montar componentes reutilizáveis com DaisyUI.
+    (function registerDaisyUIBlocks() {
+      const blocks = window.VCMS_DAISYUI_BLOCKS || [];
+      blocks.forEach((b) => {
+        editor.BlockManager.add(b.id, {
+          label: `${b.media || ''} ${b.label}`.trim(),
+          category: { label: 'DaisyUI', order: 6 },
+          content: b.content,
+        });
+      });
+    })();
 
     // ═══════════════════════════════════════════════════════════════════════
     // FIX ÍCONES FONT AWESOME
