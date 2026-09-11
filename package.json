@@ -38,12 +38,12 @@
     "astro": "^7.3.2",
     "cheerio": "^1.2.0",
     "daisyui": "^5.7.32",
-    "theme-change": "^3.0.4",
     "grapesjs": "^0.22.15",
     "grapesjs-blocks-basic": "^1.0.2",
     "grapesjs-tailwind": "^1.0.13",
     "pannellum": "^2.5.6",
-    "tailwindcss": "^4.2.4"
+    "tailwindcss": "^4.2.4",
+    "theme-change": "^3.0.4"
   },
   "allowScripts": {
     "sharp@0.34.5": true,
