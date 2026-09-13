@@ -182,20 +182,23 @@ VCMS360/
 │   │   └── fontawesome/           # Icons (css/ + webfonts/)
 │   ├── js/
 │   │   ├── editor-main.js         # Page editor logic
-│   │   └── components-main.js     # Component editor logic
+│   │   ├── components-main.js     # Component editor logic
+│   │   └── daisyui-blocks.js      # DaisyUI block library (shared by both editors)
 │   ├── resources/                 # Images and videos uploaded by the editor (runtime)
 │   ├── glv.png                    # Author photo (editor only)
 │   ├── openmaker.png              # Open Maker logo (editor only)
 │   ├── VisualCMS360header.png     # Header logo (editor only)
 │   ├── favicon.ico
-│   └── favicon.svg
+│   ├── favicon.svg
+│   └── favicon.png
 ├── src/
 │   ├── data/                      # Persisted data (written at runtime)
 │   │   ├── pages.json             # Site pages (includes per-page seo field)
 │   │   ├── components.json        # Shared components
 │   │   └── site.json              # Global site SEO configuration
 │   ├── lib/
-│   │   └── seo.ts                 # SEO resolver (cascade + <head> tags)
+│   │   ├── seo.ts                 # SEO resolver (cascade + <head> tags)
+│   │   └── componentSync.ts       # Propagates component edits to pages that use them
 │   ├── layouts/
 │   │   └── Layout.astro           # Base layout (Virtual Tour + Gallery + FA/jQuery)
 │   ├── styles/
@@ -216,7 +219,8 @@ VCMS360/
 │       │   ├── site.ts            # Load/save global SEO configuration
 │       │   ├── assets/            # Image upload and listing
 │       │   │   ├── upload.ts
-│       │   │   └── load.ts
+│       │   │   ├── load.ts
+│       │   │   └── folders.ts
 │       │   └── components/        # Components API
 │       │       ├── save.ts
 │       │       ├── load.ts
