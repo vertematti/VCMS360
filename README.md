@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>Version:</strong> 1.0.2 · <strong>Build date:</strong> 2026-07-15
+  <strong>Version:</strong> 1.1.2 · <strong>Build date:</strong> 2026-09-13
 </p>
 
 <p align="center">
@@ -177,6 +177,8 @@ VCMS360/
 │   │   ├── aframe.min.js          # A-Frame (360° video)
 │   │   ├── pannellum.min.js/css   # Pannellum (360° photo)
 │   │   ├── jquery.min.js          # jQuery
+│   │   ├── daisyui/daisyui.css    # DaisyUI (editor canvas preview)
+│   │   ├── theme-change/          # theme-change (light/dark toggle)
 │   │   └── fontawesome/           # Icons (css/ + webfonts/)
 │   ├── js/
 │   │   ├── editor-main.js         # Page editor logic
@@ -253,19 +255,21 @@ VCMS360/
 
 | Technology | Version | License | Use |
 |---|---|---|---|
-| [Astro](https://astro.build) | ^7.0 | MIT | SSR/SSG framework |
-| [@astrojs/node](https://docs.astro.build/en/guides/integrations-guide/node/) | ^11.0 | MIT | SSR adapter for Node |
-| [Vite](https://vitejs.dev) | ^8.0 | MIT | Bundler / dev server (via Astro) |
+| [Astro](https://astro.build) | ^7.3 | MIT | SSR/SSG framework |
+| [@astrojs/node](https://docs.astro.build/en/guides/integrations-guide/node/) | ^11.1 | MIT | SSR adapter for Node |
+| [Vite](https://vitejs.dev) | 8.2.2 | MIT | Bundler / dev server (via Astro) |
 | [GrapesJS](https://grapesjs.com) | ^0.22 | BSD-3-Clause | Visual drag-and-drop editor |
 | [grapesjs-tailwind](https://github.com/digisquad/grapesjs-tailwind) | ^1.0 | MIT | Tailwind CSS blocks |
 | [grapesjs-blocks-basic](https://github.com/GrapesJS/blocks-basic) | ^1.0 | BSD-3-Clause | Basic GrapesJS blocks |
 | [Pannellum](https://pannellum.org) | ^2.5 | MIT | 360° panoramic photo viewer |
-| [A-Frame](https://aframe.io) | ^1.6 | MIT | 360° panoramic video (WebVR) |
+| [A-Frame](https://aframe.io) | ^1.8 | MIT | 360° panoramic video (WebVR) |
 | [Tailwind CSS](https://tailwindcss.com) | ^4.2 | MIT | Styling framework |
+| [DaisyUI](https://daisyui.com) | ^5.7 | MIT | Prebuilt UI components on top of Tailwind (light/dark themes) |
+| [theme-change](https://github.com/saadeghi/theme-change) | ^3.0 | MIT | Light/dark theme toggle, persisted in localStorage |
 | [Cheerio](https://cheerio.js.org) | ^1.2 | MIT | Server-side HTML parser |
 | [jQuery](https://jquery.com) | ^3.7 | MIT | Interactivity on published pages |
 | [Font Awesome](https://fontawesome.com) | ^6.5 | MIT + SIL OFL | Icons |
-| [Electron](https://www.electronjs.org) | ^35.0 | MIT | Desktop app runtime (standalone build) |
+| [Electron](https://www.electronjs.org) | ^44.2 | MIT | Desktop app runtime (standalone build) |
 | [electron-builder](https://www.electron.build) | ^26.0 | MIT | Desktop installers (Linux/Windows/macOS) |
 
 > Third-party dependencies **keep their original licenses** (MIT and BSD-3-Clause).

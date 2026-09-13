@@ -3835,8 +3835,8 @@
 
           <div style="text-align:center;padding:0 12px 4px;">
             <p style="margin:0 0 8px;font-size:12.5px;line-height:1.5;color:#cbd5e1;">Sistema de gerenciamento de conteúdo visual local para criação de sites estáticos com tours virtuais 360°, galerias de fotos e edição visual drag-and-drop.</p>
-            <p style="margin:0 0 8px;font-size:12px;color:#94a3b8;"><strong style="color:#cbd5e1;">Versão:</strong> 1.0.2</p>
-            <p style="margin:0 0 8px;font-size:12px;color:#94a3b8;"><strong style="color:#cbd5e1;">Data de compilação:</strong> 2026-07-15</p>
+            <p style="margin:0 0 8px;font-size:12px;color:#94a3b8;"><strong style="color:#cbd5e1;">Versão:</strong> 1.1.2</p>
+            <p style="margin:0 0 8px;font-size:12px;color:#94a3b8;"><strong style="color:#cbd5e1;">Data de compilação:</strong> 2026-09-13</p>
           </div>
 
           <hr class="cms-about-divider">
@@ -3888,6 +3888,8 @@
               <div class="cms-about-lic-row"><span style="color:#9ca3af;">A-Frame</span><span class="cms-about-badge-sec">MIT</span></div>
               <div class="cms-about-lic-row"><span style="color:#9ca3af;">Pannellum</span><span class="cms-about-badge-sec">MIT</span></div>
               <div class="cms-about-lic-row"><span style="color:#9ca3af;">Tailwind CSS</span><span class="cms-about-badge-sec">MIT</span></div>
+              <div class="cms-about-lic-row"><span style="color:#9ca3af;">DaisyUI</span><span class="cms-about-badge-sec">MIT</span></div>
+              <div class="cms-about-lic-row"><span style="color:#9ca3af;">theme-change</span><span class="cms-about-badge-sec">MIT</span></div>
               <div class="cms-about-lic-row"><span style="color:#9ca3af;">Cheerio</span><span class="cms-about-badge-sec">MIT</span></div>
               <div class="cms-about-lic-row"><span style="color:#9ca3af;">jQuery</span><span class="cms-about-badge-sec">MIT</span></div>
               <div class="cms-about-lic-row"><span style="color:#9ca3af;">Font Awesome</span><span class="cms-about-badge-sec">MIT + OFL</span></div>

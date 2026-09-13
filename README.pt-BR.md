@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <strong>Versão:</strong> 1.0.2 · <strong>Data de compilação:</strong> 2026-07-15
+  <strong>Versão:</strong> 1.1.2 · <strong>Data de compilação:</strong> 2026-09-13
 </p>
 
 <p align="center">
@@ -177,6 +177,8 @@ VCMS360/
 │   │   ├── aframe.min.js          # A-Frame (vídeo 360°)
 │   │   ├── pannellum.min.js/css   # Pannellum (foto 360°)
 │   │   ├── jquery.min.js          # jQuery
+│   │   ├── daisyui/daisyui.css    # DaisyUI (preview no canvas do editor)
+│   │   ├── theme-change/          # theme-change (alternância claro/escuro)
 │   │   └── fontawesome/           # Ícones (css/ + webfonts/)
 │   ├── js/
 │   │   ├── editor-main.js         # Lógica do editor de páginas
@@ -253,19 +255,21 @@ VCMS360/
 
 | Tecnologia | Versão | Licença | Uso |
 |---|---|---|---|
-| [Astro](https://astro.build) | ^7.0 | MIT | Framework SSR/SSG |
-| [@astrojs/node](https://docs.astro.build/en/guides/integrations-guide/node/) | ^11.0 | MIT | Adapter SSR para Node |
-| [Vite](https://vitejs.dev) | ^8.0 | MIT | Bundler / dev server (via Astro) |
+| [Astro](https://astro.build) | ^7.3 | MIT | Framework SSR/SSG |
+| [@astrojs/node](https://docs.astro.build/en/guides/integrations-guide/node/) | ^11.1 | MIT | Adapter SSR para Node |
+| [Vite](https://vitejs.dev) | 8.2.2 | MIT | Bundler / dev server (via Astro) |
 | [GrapesJS](https://grapesjs.com) | ^0.22 | BSD-3-Clause | Editor visual drag-and-drop |
 | [grapesjs-tailwind](https://github.com/digisquad/grapesjs-tailwind) | ^1.0 | MIT | Blocos Tailwind CSS |
 | [grapesjs-blocks-basic](https://github.com/GrapesJS/blocks-basic) | ^1.0 | BSD-3-Clause | Blocos básicos GrapesJS |
 | [Pannellum](https://pannellum.org) | ^2.5 | MIT | Viewer de foto panorâmica 360° |
-| [A-Frame](https://aframe.io) | ^1.6 | MIT | Vídeo panorâmico 360° (WebVR) |
+| [A-Frame](https://aframe.io) | ^1.8 | MIT | Vídeo panorâmico 360° (WebVR) |
 | [Tailwind CSS](https://tailwindcss.com) | ^4.2 | MIT | Framework de estilização |
+| [DaisyUI](https://daisyui.com) | ^5.7 | MIT | Componentes prontos sobre o Tailwind (temas claro/escuro) |
+| [theme-change](https://github.com/saadeghi/theme-change) | ^3.0 | MIT | Alternância de tema claro/escuro, persistida no localStorage |
 | [Cheerio](https://cheerio.js.org) | ^1.2 | MIT | Parser HTML server-side |
 | [jQuery](https://jquery.com) | ^3.7 | MIT | Interatividade nas páginas publicadas |
 | [Font Awesome](https://fontawesome.com) | ^6.5 | MIT + SIL OFL | Ícones |
-| [Electron](https://www.electronjs.org) | ^35.0 | MIT | Runtime do app desktop (build standalone) |
+| [Electron](https://www.electronjs.org) | ^44.2 | MIT | Runtime do app desktop (build standalone) |
 | [electron-builder](https://www.electron.build) | ^26.0 | MIT | Instaladores desktop (Linux/Windows/macOS) |
 
 > As dependências de terceiros **mantêm suas licenças originais** (MIT e BSD-3-Clause).
