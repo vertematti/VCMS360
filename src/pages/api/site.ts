@@ -20,6 +20,10 @@ const DEFAULT_SITE = {
   author: '',
   twitterHandle: '',
   robotsDefault: 'index,follow',
+  // Cor do link do menu correspondente à página aberta. Vazio = usa o padrão
+  // (cor primária do tema DaisyUI). Aceita qualquer valor CSS de cor:
+  // "#f59e0b", "tomato", "oklch(70% .2 40)", "var(--color-secondary)"…
+  navActiveColor: '',
   organization: { name: '', logo: '', sameAs: [] as string[] },
 };
 

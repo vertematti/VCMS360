@@ -3594,6 +3594,17 @@
               </div>
               <label>Robots padrao</label>
               <input type="text" id="st-robotsDefault" value="${esc(v(site,'robotsDefault'))}" placeholder="index,follow">
+              <h3 style="margin-top:12px;">Aparencia do menu</h3>
+              <label>Cor do link da pagina atual</label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="color" id="st-navActiveColorPicker"
+                       value="${esc(/^#[0-9a-fA-F]{6}$/.test(v(site,'navActiveColor')) ? v(site,'navActiveColor') : '#f59e0b')}"
+                       style="width:44px;height:34px;padding:2px;cursor:pointer;flex:none;">
+                <input type="text" id="st-navActiveColor" value="${esc(v(site,'navActiveColor'))}"
+                       placeholder="vazio = cor primaria do tema (ex.: #f59e0b, tomato, var(--color-secondary))"
+                       style="flex:1;">
+              </div>
+              <p class="cms-seo-hint">Destaca no menu o link da pagina que esta aberta — vale tanto para os links no topo quanto para os que aparecem no menu do hamburger. Deixe vazio para usar a cor primaria do tema.</p>
               <h3 style="margin-top:12px;">Organizacao (JSON-LD global)</h3>
               <div class="cms-seo-row">
                 <div><label>Nome</label><input type="text" id="st-orgName" value="${esc(v(orgObj,'name'))}"></div>
@@ -3681,6 +3692,21 @@
             ed.Modal.close();
           };
 
+          /* Seletor visual de cor <-> campo de texto do "link da pagina atual".
+             O campo de texto continua sendo a fonte da verdade (aceita
+             qualquer valor CSS, inclusive var(--…) e nomes de cor); o seletor
+             apenas o preenche com um hex quando usado. */
+          try {
+            const navTxt  = $('#st-navActiveColor');
+            const navPick = $('#st-navActiveColorPicker');
+            if (navTxt && navPick) {
+              navPick.oninput = () => { navTxt.value = navPick.value; };
+              navTxt.oninput  = () => {
+                if (/^#[0-9a-fA-F]{6}$/.test(navTxt.value.trim())) navPick.value = navTxt.value.trim();
+              };
+            }
+          } catch (e) {}
+
           $('#seo-save-site').onclick = async () => {
             const payload = {
               siteName: $('#st-siteName').value.trim(),
@@ -3693,6 +3719,7 @@
               author: $('#st-author').value.trim(),
               twitterHandle: $('#st-twitterHandle').value.trim(),
               robotsDefault: $('#st-robotsDefault').value.trim() || 'index,follow',
+              navActiveColor: $('#st-navActiveColor').value.trim(),
               organization: {
                 name: $('#st-orgName').value.trim(),
                 logo: $('#st-orgLogo').value.trim(),

@@ -6,6 +6,7 @@ import path from 'node:path';
 import * as cheerio from 'cheerio';
 import Layout from '../layouts/Layout.astro';
 import { loadSiteConfig, resolveSeo } from '../lib/seo';
+import { markActiveNavLinks, buildActiveNavCss } from '../lib/activeNav';
 
 export const prerender = false;
 
@@ -106,6 +107,14 @@ if (finalJquery.trim()) {
 // Resolver SEO: cascata página → site.json → fallback
 const siteConfig = await loadSiteConfig();
 const seo = resolveSeo(pageData.seo || {}, siteConfig, slug);
+
+// ── Destaque do item de menu da página atual ──────────────────────────────
+// Feito aqui (no servidor, a cada requisição) e não dentro do componente
+// Header porque o Header é compartilhado: seu HTML é idêntico em todas as
+// páginas, então quem sabe qual link destacar é a página sendo renderizada.
+// A cor vem de site.json (campo navActiveColor), configurável pelo editor.
+finalHtml = markActiveNavLinks(finalHtml, slug);
+finalCss += '\n' + buildActiveNavCss((siteConfig as any)?.navActiveColor);
 ---
 
 <Layout lang={seo.lang} seoTags={seo.tags}>
