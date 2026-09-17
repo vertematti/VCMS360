@@ -15,6 +15,40 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- ── Anti-flash do tema (FOUC) ─────────────────────────────────────────
+       Precisa ser o PRIMEIRO script do <head>, inline e sem defer/async.
+       A biblioteca theme-change só aplica o tema no DOMContentLoaded, ou seja,
+       depois que o HTML todo foi lido — até lá a página já pintou com o tema
+       claro (padrão), o que produzia o "flash" branco a cada navegação para
+       quem usa o tema escuro.
+       Aqui lemos a mesma chave do localStorage que a theme-change usa
+       ("theme") e aplicamos o atributo data-theme imediatamente, antes de
+       qualquer pintura. Também definimos color-scheme no próprio elemento
+       <html>: isso faz o navegador pintar a tela-base (o fundo que aparece
+       ENTRE uma página e outra, antes do CSS carregar) já na cor escura,
+       eliminando o flash também durante a troca de páginas.
+       Envolvido em try/catch porque localStorage pode estar indisponível
+       (modo privado/anônimo em alguns navegadores). -->
+  <script is:inline>
+    (function () {
+      try {
+        var t = localStorage.getItem('theme');
+        if (t) {
+          document.documentElement.setAttribute('data-theme', t);
+          document.documentElement.style.colorScheme = (t === 'dark') ? 'dark' : 'light';
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <!-- Fundo da tela-base já na cor do tema, para o intervalo entre páginas.
+       :root[data-theme="dark"] casa com o atributo posto pelo script acima.
+       Os valores são exatamente os --color-base-100 dos temas light/dark do
+       DaisyUI (conferidos em vendor/daisyui/daisyui.css) — usar um tom
+       aproximado causaria uma leve mudança de cor quando o CSS real chegasse. -->
+  <style is:inline>
+    :root[data-theme="dark"]  { background-color: oklch(25.33% .016 252.42); }
+    :root[data-theme="light"] { background-color: oklch(100% 0 0); }
+  </style>
   <!-- Favicons -->
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
