@@ -4,6 +4,7 @@
 import type { APIRoute } from 'astro';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import * as cheerio from 'cheerio';
 
 export const prerender = false;
 const cwd = process.cwd();
@@ -98,25 +99,79 @@ export const POST: APIRoute = async ({ request, url }) => {
     }
 
     // ── COMMIT: importa seleção ─────────────────────────────────────────────
-    const selectedPages = (formData.get('pages') as string | null)?.split(',').filter(Boolean) ?? Object.keys(zipPages);
-    const selectedComps = (formData.get('components') as string | null)?.split(',').filter(Boolean) ?? Object.keys(zipComps);
+    // `formData.has(...)` distingue "campo ausente" (cliente antigo → importa
+    // tudo, mantendo compatibilidade) de "campo presente porém vazio"
+    // (usuário desmarcou todos os itens daquela seção → não importa nenhum).
+    // Usar apenas `formData.get(...) ?? tudo` fazia uma seleção só de
+    // componentes importar todas as páginas junto.
+    const parseSel = (field: string, allKeys: string[]) =>
+      formData.has(field)
+        ? String(formData.get(field) ?? '').split(',').map(s => s.trim()).filter(Boolean)
+        : allKeys;
+
+    const selectedPages = parseSel('pages', Object.keys(zipPages));
+    const selectedComps = parseSel('components', Object.keys(zipComps));
 
     const report: string[] = [];
+    const warnings: string[] = [];
+
+    // Componentes primeiro: as páginas podem depender deles (ver ajuste de
+    // coerência mais abaixo), então precisamos do estado final já gravado.
+    const existingComps = await readJsonSafe(path.join(cwd, 'src/data/components.json'));
+    if (selectedComps.length > 0) {
+      for (const k of selectedComps) if (k in zipComps) existingComps[k] = zipComps[k];
+      await fs.writeFile(path.join(cwd, 'src/data/components.json'), JSON.stringify(existingComps, null, 2), 'utf-8');
+      report.push(...selectedComps.filter(c => c in zipComps).map(c => `component:${c}`));
+    }
 
     // Merge pages
     if (selectedPages.length > 0) {
       const existing = await readJsonSafe(path.join(cwd, 'src/data/pages.json'));
-      for (const k of selectedPages) if (k in zipPages) existing[k] = zipPages[k];
+      for (const k of selectedPages) {
+        if (!(k in zipPages)) continue;
+        const page = zipPages[k];
+        // ── Coerência página → componente ──────────────────────────────────
+        // A página importada pode referenciar componentes que NÃO existem no
+        // projeto final (não foram selecionados na importação e nem já
+        // existiam aqui). Sem tratamento, o wrapper [data-component-id] ficaria
+        // apontando para o vazio: o componente some da página ao renderizar.
+        // Solução: "achatar" essas referências — o conteúdo visual que veio no
+        // ZIP é mantido, só deixa de ser um componente vinculado e vira
+        // conteúdo normal da página (editável e independente).
+        try {
+          if (typeof page?.html === 'string' && page.html.includes('data-component-id')) {
+            const hasBody = /<body[\s>]/i.test(page.html);
+            const $ = cheerio.load(page.html);
+            const orphans = new Set<string>();
+            $('[data-component-id]').each((_, el) => {
+              const id = $(el).attr('data-component-id');
+              if (!id || id in existingComps) return;
+              orphans.add(id);
+              $(el).removeAttr('data-component-id');   // deixa de ser vinculado
+            });
+            if (orphans.size > 0) {
+              // Mesma convenção de serialização usada em componentSync.ts,
+              // para não alterar o formato já gravado em pages.json.
+              const full = $.html();
+              if (hasBody) {
+                const m = full.match(/<body[\s\S]*<\/body>/i);
+                page.html = m ? m[0] : full;
+              } else {
+                const m = full.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+                page.html = m ? m[1] : full;
+              }
+              warnings.push(
+                `A página "${k}" usava o(s) componente(s) ${[...orphans].join(', ')}, ` +
+                `que não foram importados nem existem no projeto. O conteúdo foi mantido ` +
+                `na página, mas deixou de ser um componente vinculado.`
+              );
+            }
+          }
+        } catch { /* se o parse falhar, importa a página como veio */ }
+        existing[k] = page;
+      }
       await fs.writeFile(path.join(cwd, 'src/data/pages.json'), JSON.stringify(existing, null, 2), 'utf-8');
-      report.push(...selectedPages.map(p => `page:${p}`));
-    }
-
-    // Merge components
-    if (selectedComps.length > 0) {
-      const existing = await readJsonSafe(path.join(cwd, 'src/data/components.json'));
-      for (const k of selectedComps) if (k in zipComps) existing[k] = zipComps[k];
-      await fs.writeFile(path.join(cwd, 'src/data/components.json'), JSON.stringify(existing, null, 2), 'utf-8');
-      report.push(...selectedComps.map(c => `component:${c}`));
+      report.push(...selectedPages.filter(p => p in zipPages).map(p => `page:${p}`));
     }
 
     // Uploads (sempre todos) — preserva subpastas, com trava anti-traversal
@@ -129,7 +184,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       report.push(`upload:${name}`);
     }
 
-    return new Response(JSON.stringify({ success: true, imported: report }), {
+    return new Response(JSON.stringify({ success: true, imported: report, warnings }), {
       status: 200, headers: { 'Content-Type': 'application/json' }
     });
 

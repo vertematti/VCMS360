@@ -4243,8 +4243,14 @@
           footer.innerHTML = '<span style="color:#9ca3af;font-size:13px;">⏳ Importando...</span>';
 
           const form = new FormData(); form.append('file', file);
-          if (selPages.length)  form.append('pages', selPages.join(','));
-          if (selComps.length)  form.append('components', selComps.join(','));
+          /* SEMPRE enviar os dois campos, mesmo vazios. Antes eles só eram
+             enviados quando havia itens selecionados — e o servidor, ao não
+             receber o campo, assumia "importar tudo" como padrão. Resultado:
+             selecionar só componentes (deixando páginas desmarcadas) acabava
+             importando TODAS as páginas do ZIP. Enviando o campo vazio, o
+             servidor consegue distinguir "nada selecionado" de "campo ausente". */
+          form.append('pages', selPages.join(','));
+          form.append('components', selComps.join(','));
 
           try {
             const res  = await fetch('/api/import?action=commit', { method: 'POST', body: form });
@@ -4257,6 +4263,7 @@
               try {
                 sessionStorage.setItem('vcms360_import_report', JSON.stringify({
                   imported: json.imported || [],
+                  warnings: json.warnings || [],
                 }));
               } catch (e) {}
 
@@ -4333,6 +4340,13 @@
         + items.length + ' item(ns) no total.</p>'
         + section('Páginas', pages)
         + section('Componentes', comps)
+        + (Array.isArray(data.warnings) && data.warnings.length
+            ? '<div style="background:#1c1007;border:1px solid #92400e;border-radius:6px;padding:10px 12px;'
+              + 'font-size:12px;color:#fbbf24;line-height:1.6;">'
+              + '<strong style="color:#f59e0b;">⚠️ Ajustes aplicados</strong><br>'
+              + data.warnings.map(function (w) { return '• ' + w; }).join('<br>')
+              + '</div>'
+            : '')
         + (media.length ? '<p style="color:#6b7280;font-size:12px;margin:4px 0 0;">🖼️ ' + media.length + ' arquivo(s) de mídia importado(s).</p>' : '');
 
       const footer = document.createElement('div');
