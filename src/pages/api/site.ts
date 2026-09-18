@@ -24,6 +24,13 @@ const DEFAULT_SITE = {
   // (cor primária do tema DaisyUI). Aceita qualquer valor CSS de cor:
   // "#f59e0b", "tomato", "oklch(70% .2 40)", "var(--color-secondary)"…
   navActiveColor: '',
+  // Tema padrão de carregamento (visitante sem preferência salva ainda) e
+  // cores de fundo customizadas por tema. Vazio nas cores = usa o padrão do
+  // DaisyUI (ver Layout.astro, onde os valores exatos são documentados).
+  defaultTheme: 'light',
+  themeLightBg: '',
+  themeDarkBg: '',
+  showThemeToggle: true,
   organization: { name: '', logo: '', sameAs: [] as string[] },
 };
 

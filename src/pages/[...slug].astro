@@ -7,6 +7,7 @@ import * as cheerio from 'cheerio';
 import Layout from '../layouts/Layout.astro';
 import { loadSiteConfig, resolveSeo } from '../lib/seo';
 import { markActiveNavLinks, buildActiveNavCss } from '../lib/activeNav';
+import { applyThemeToggleVisibility } from '../lib/headerTheme';
 
 export const prerender = false;
 
@@ -115,9 +116,20 @@ const seo = resolveSeo(pageData.seo || {}, siteConfig, slug);
 // A cor vem de site.json (campo navActiveColor), configurável pelo editor.
 finalHtml = markActiveNavLinks(finalHtml, slug);
 finalCss += '\n' + buildActiveNavCss((siteConfig as any)?.navActiveColor);
+
+// ── Mostrar/ocultar o alternador de tema no Header ──────────────────────
+// Configurável em site.json → showThemeToggle (padrão: true).
+const showThemeToggle = (siteConfig as any)?.showThemeToggle !== false;
+finalHtml = applyThemeToggleVisibility(finalHtml, showThemeToggle);
 ---
 
-<Layout lang={seo.lang} seoTags={seo.tags}>
+<Layout
+  lang={seo.lang}
+  seoTags={seo.tags}
+  defaultTheme={(siteConfig as any)?.defaultTheme}
+  lightBg={(siteConfig as any)?.themeLightBg}
+  darkBg={(siteConfig as any)?.themeDarkBg}
+>
   <!-- CSS from GrapesJS — is:global para evitar scoping do Astro -->
   <!-- Necessário para position:sticky, position:fixed funcionarem -->
   <style is:global set:html={finalCss}></style>

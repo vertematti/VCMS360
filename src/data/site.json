@@ -10,6 +10,10 @@
   "twitterHandle": "",
   "robotsDefault": "index,follow",
   "navActiveColor": "",
+  "defaultTheme": "light",
+  "themeLightBg": "",
+  "themeDarkBg": "",
+  "showThemeToggle": true,
   "organization": {
     "name": "",
     "logo": "",

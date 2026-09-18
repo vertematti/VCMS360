@@ -3605,6 +3605,44 @@
                        style="flex:1;">
               </div>
               <p class="cms-seo-hint">Destaca no menu o link da pagina que esta aberta — vale tanto para os links no topo quanto para os que aparecem no menu do hamburger. Deixe vazio para usar a cor primaria do tema.</p>
+
+              <h3 style="margin-top:12px;">Temas claro/escuro</h3>
+              <div class="cms-seo-row">
+                <div>
+                  <label>Cor de fundo — tema claro</label>
+                  <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="color" id="st-themeLightBgPicker"
+                           value="${esc(/^#[0-9a-fA-F]{6}$/.test(v(site,'themeLightBg')) ? v(site,'themeLightBg') : '#ffffff')}"
+                           style="width:44px;height:34px;padding:2px;cursor:pointer;flex:none;">
+                    <input type="text" id="st-themeLightBg" value="${esc(v(site,'themeLightBg'))}"
+                           placeholder="vazio = padrao do DaisyUI" style="flex:1;">
+                  </div>
+                </div>
+                <div>
+                  <label>Cor de fundo — tema escuro</label>
+                  <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="color" id="st-themeDarkBgPicker"
+                           value="${esc(/^#[0-9a-fA-F]{6}$/.test(v(site,'themeDarkBg')) ? v(site,'themeDarkBg') : '#1d232a')}"
+                           style="width:44px;height:34px;padding:2px;cursor:pointer;flex:none;">
+                    <input type="text" id="st-themeDarkBg" value="${esc(v(site,'themeDarkBg'))}"
+                           placeholder="vazio = padrao do DaisyUI" style="flex:1;">
+                  </div>
+                </div>
+              </div>
+              <p class="cms-seo-hint">Cor de fundo (base-100) de cada tema. Aceita qualquer valor CSS de cor. Deixe vazio para usar a cor padrao do DaisyUI.</p>
+
+              <label style="margin-top:10px;">Tema padrao de carregamento</label>
+              <select id="st-defaultTheme">
+                <option value="light" ${v(site,'defaultTheme')!=='dark' ? 'selected' : ''}>Claro</option>
+                <option value="dark"  ${v(site,'defaultTheme')==='dark' ? 'selected' : ''}>Escuro</option>
+              </select>
+              <p class="cms-seo-hint">Tema usado na primeira visita, antes de o visitante escolher algo — a partir dai a preferencia do visitante (guardada no navegador dele) sempre prevalece.</p>
+
+              <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;">
+                <input type="checkbox" id="st-showThemeToggle" ${v(site,'showThemeToggle')!=='false' ? 'checked' : ''} style="width:auto;">
+                <span>Mostrar o alternador de tema (claro/escuro) no cabecalho</span>
+              </label>
+              <p class="cms-seo-hint">Desmarcar remove o icone de sol/lua do cabecalho em todas as paginas publicadas. O tema configurado acima continua valendo mesmo sem o icone.</p>
               <h3 style="margin-top:12px;">Organizacao (JSON-LD global)</h3>
               <div class="cms-seo-row">
                 <div><label>Nome</label><input type="text" id="st-orgName" value="${esc(v(orgObj,'name'))}"></div>
@@ -3707,6 +3745,19 @@
             }
           } catch (e) {}
 
+          /* Mesmo padrão para as cores de fundo dos temas claro/escuro. */
+          try {
+            [['#st-themeLightBg', '#st-themeLightBgPicker'], ['#st-themeDarkBg', '#st-themeDarkBgPicker']].forEach(([txtSel, pickSel]) => {
+              const txt  = $(txtSel);
+              const pick = $(pickSel);
+              if (!txt || !pick) return;
+              pick.oninput = () => { txt.value = pick.value; };
+              txt.oninput  = () => {
+                if (/^#[0-9a-fA-F]{6}$/.test(txt.value.trim())) pick.value = txt.value.trim();
+              };
+            });
+          } catch (e) {}
+
           $('#seo-save-site').onclick = async () => {
             const payload = {
               siteName: $('#st-siteName').value.trim(),
@@ -3720,6 +3771,10 @@
               twitterHandle: $('#st-twitterHandle').value.trim(),
               robotsDefault: $('#st-robotsDefault').value.trim() || 'index,follow',
               navActiveColor: $('#st-navActiveColor').value.trim(),
+              defaultTheme: $('#st-defaultTheme').value === 'dark' ? 'dark' : 'light',
+              themeLightBg: $('#st-themeLightBg').value.trim(),
+              themeDarkBg: $('#st-themeDarkBg').value.trim(),
+              showThemeToggle: $('#st-showThemeToggle').checked,
               organization: {
                 name: $('#st-orgName').value.trim(),
                 logo: $('#st-orgLogo').value.trim(),

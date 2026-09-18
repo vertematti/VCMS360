@@ -6,8 +6,40 @@ import '../styles/global.css';
 interface Props {
   lang?: string;
   seoTags?: string;   // bloco HTML de <meta>/<title>/JSON-LD já resolvido
+  defaultTheme?: string;  // tema aplicado a visitantes sem preferência salva ainda ('light' | 'dark')
+  lightBg?: string;       // cor de fundo customizada do tema claro (vazio = padrão do DaisyUI)
+  darkBg?: string;        // cor de fundo customizada do tema escuro (vazio = padrão do DaisyUI)
 }
-const { lang = 'pt-BR', seoTags = '' } = Astro.props;
+const {
+  lang = 'pt-BR',
+  seoTags = '',
+  defaultTheme = 'light',
+  lightBg = '',
+  darkBg = '',
+} = Astro.props;
+
+// Sanitiza o tema padrão vindo de site.json — só 'light'/'dark' são temas
+// reais registrados no @plugin "daisyui" (ver global.css); qualquer outro
+// valor (campo vazio, erro de digitação salvo direto no JSON) cai em 'light'.
+const safeDefaultTheme = defaultTheme === 'dark' ? 'dark' : 'light';
+
+// Cores exatas de --color-base-100 dos temas padrão do DaisyUI (conferidas em
+// vendor/daisyui/daisyui.css), usadas quando o site não define uma cor
+// customizada. Ficam aqui como constantes porque servem de fallback tanto
+// para a sobrescrita de --color-base-100 quanto para o anti-flash abaixo.
+const DAISYUI_LIGHT_BG = 'oklch(100% 0 0)';
+const DAISYUI_DARK_BG  = 'oklch(25.33% .016 252.42)';
+const safeLightBg = (lightBg || '').trim() || DAISYUI_LIGHT_BG;
+const safeDarkBg  = (darkBg  || '').trim() || DAISYUI_DARK_BG;
+
+// Construído como string simples e injetado via set:html (mesma técnica já
+// usada em [...slug].astro para o CSS agregado) — `define:vars` num <style>
+// solto no <head>, fora do template de um componente, não é aplicado pelo
+// Astro (confirmado: o bloco simplesmente não aparece no HTML final).
+const themeBgCss = `
+:root[data-theme="light"] { background-color: ${safeLightBg}; --color-base-100: ${safeLightBg}; }
+:root[data-theme="dark"]  { background-color: ${safeDarkBg};  --color-base-100: ${safeDarkBg}; }
+`.trim();
 ---
 
 <!DOCTYPE html>
@@ -27,28 +59,37 @@ const { lang = 'pt-BR', seoTags = '' } = Astro.props;
        <html>: isso faz o navegador pintar a tela-base (o fundo que aparece
        ENTRE uma página e outra, antes do CSS carregar) já na cor escura,
        eliminando o flash também durante a troca de páginas.
+
+       Se ainda não existe preferência salva (primeira visita), usamos o
+       "tema padrão de carregamento" configurado em site.json e GRAVAMOS essa
+       escolha no localStorage — a partir daí ela se comporta exatamente como
+       uma escolha feita pelo próprio visitante ao clicar no alternador
+       (persistida, sem precisar cair de novo nesse fallback nas próximas
+       páginas).
        Envolvido em try/catch porque localStorage pode estar indisponível
        (modo privado/anônimo em alguns navegadores). -->
-  <script is:inline>
+  <script is:inline define:vars={{ safeDefaultTheme }}>
     (function () {
       try {
         var t = localStorage.getItem('theme');
-        if (t) {
-          document.documentElement.setAttribute('data-theme', t);
-          document.documentElement.style.colorScheme = (t === 'dark') ? 'dark' : 'light';
+        if (!t) {
+          t = safeDefaultTheme;
+          localStorage.setItem('theme', t);
         }
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.style.colorScheme = (t === 'dark') ? 'dark' : 'light';
       } catch (e) {}
     })();
   </script>
-  <!-- Fundo da tela-base já na cor do tema, para o intervalo entre páginas.
-       :root[data-theme="dark"] casa com o atributo posto pelo script acima.
-       Os valores são exatamente os --color-base-100 dos temas light/dark do
-       DaisyUI (conferidos em vendor/daisyui/daisyui.css) — usar um tom
-       aproximado causaria uma leve mudança de cor quando o CSS real chegasse. -->
-  <style is:inline>
-    :root[data-theme="dark"]  { background-color: oklch(25.33% .016 252.42); }
-    :root[data-theme="light"] { background-color: oklch(100% 0 0); }
-  </style>
+  <!-- Fundo da tela-base já na cor do tema, para o intervalo entre páginas
+       (:root[data-theme="…"] casa com o atributo posto pelo script acima),
+       e sobrescrita de --color-base-100 do DaisyUI quando o site define uma
+       cor de fundo customizada por tema (site.json → themeLightBg/
+       themeDarkBg). Quando vazias, safeLightBg/safeDarkBg já vêm com os
+       valores padrão exatos do DaisyUI (ver constantes acima) — sobrescrever
+       com o próprio valor padrão não muda nada, então este bloco funciona
+       tanto para quem customizou quanto para quem não customizou. -->
+  <style is:inline set:html={themeBgCss}></style>
   <!-- Favicons -->
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
