@@ -59,6 +59,9 @@ export const GET: APIRoute = async ({ url }) => {
     const params = url.searchParams;
     const selectedPages = params.get('pages')?.split(',').filter(Boolean) ?? null;
     const selectedComps = params.get('components')?.split(',').filter(Boolean) ?? null;
+    // Ausente ou qualquer coisa != '0' -> inclui (mesma convenção usada pelas
+    // outras opções: campo ausente = comportamento padrão/tudo).
+    const includeSite = params.get('site') !== '0';
     const filename = (params.get('filename') || `visualcms360-export-${new Date().toISOString().slice(0,10)}`).replace(/[^a-zA-Z0-9_\-]/g, '_');
 
     const files: { name: string; data: Uint8Array }[] = [];
@@ -74,6 +77,16 @@ export const GET: APIRoute = async ({ url }) => {
     const exportComps = selectedComps ? Object.fromEntries(Object.entries(allComps).filter(([k]) => selectedComps.includes(k))) : allComps;
     if (Object.keys(exportComps).length > 0)
       files.push({ name: 'data/components.json', data: u8(JSON.stringify(exportComps, null, 2)) });
+
+    // site.json — configuração global (SEO, temas claro/escuro, favicon, etc.).
+    // As IMAGENS referenciadas por ela (favicon, imagem OG, logo…) já vêm
+    // junto de qualquer forma, pois moram em public/resources e são
+    // exportadas abaixo independente de estarem ou não referenciadas.
+    if (includeSite) {
+      const siteConfig = await readJsonSafe(path.join(cwd, 'src/data/site.json'));
+      if (Object.keys(siteConfig).length > 0)
+        files.push({ name: 'data/site.json', data: u8(JSON.stringify(siteConfig, null, 2)) });
+    }
 
     // uploads (recursivo, preservando subpastas)
     for (const rel of await listUploads()) {
@@ -102,9 +115,11 @@ export const POST: APIRoute = async () => {
   try {
     const allPages = await readJsonSafe(path.join(cwd, 'src/data/pages.json'));
     const allComps = await readJsonSafe(path.join(cwd, 'src/data/components.json'));
+    const siteConfig = await readJsonSafe(path.join(cwd, 'src/data/site.json'));
     return new Response(JSON.stringify({
       pages: Object.keys(allPages),
       components: Object.keys(allComps),
+      hasSiteConfig: Object.keys(siteConfig).length > 0,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } });

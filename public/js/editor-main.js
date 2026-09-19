@@ -4136,12 +4136,13 @@
     // ── Export: modal com seleção de páginas, componentes e nome do arquivo ──
     async function cmsExportProject() {
       // 1. Buscar lista de páginas e componentes disponíveis
-      let pages = [], components = [];
+      let pages = [], components = [], hasSiteConfig = false;
       try {
         const res = await fetch('/api/export', { method: 'POST' });
         const data = await res.json();
         pages = data.pages || [];
         components = data.components || [];
+        hasSiteConfig = !!data.hasSiteConfig;
       } catch (e) {
         alert('Erro ao carregar dados para exportação.'); return;
       }
@@ -4179,6 +4180,13 @@
         <div class="exp-section">
           <div class="exp-section-title">Nome do arquivo</div>
           <input class="exp-filename" id="exp-filename" type="text" value="${suggestedName}" />
+        </div>
+
+        <div class="exp-section">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#d4d4d4;cursor:pointer;">
+            <input type="checkbox" id="exp-site" ${hasSiteConfig ? 'checked' : ''} ${hasSiteConfig ? '' : 'disabled'} style="width:14px;height:14px;cursor:pointer;accent-color:#3b82f6;">
+            <span>Configurações do site (SEO global, temas claro/escuro, favicon)${hasSiteConfig ? '' : ' — nada configurado ainda'}</span>
+          </label>
         </div>
 
         <div class="exp-section" style="display:flex;flex-direction:column;flex:1;min-height:0;">
@@ -4256,6 +4264,8 @@
         params.set('filename', filename);
         if (selPages.length)  params.set('pages', selPages.join(','));
         if (selComps.length)  params.set('components', selComps.join(','));
+        const wantSite = wrap.querySelector('#exp-site').checked;
+        if (!wantSite) params.set('site', '0');
 
         const a = document.createElement('a');
         a.href = '/api/export?' + params.toString();
@@ -4334,7 +4344,7 @@
         }
         loadingEl.remove();
 
-        const { pages=[], components=[], uploads=[], pageConflicts=[], compConflicts=[] } = preview;
+        const { pages=[], components=[], uploads=[], pageConflicts=[], compConflicts=[], hasSiteConfig=false } = preview;
         const hasConflicts = pageConflicts.length > 0 || compConflicts.length > 0;
 
         // ── Montar conteúdo do modal ───────────────────────────────────────
@@ -4379,6 +4389,15 @@
         wrap.appendChild(makeSection('Páginas', pages, pageConflicts, 'imp-p-'));
         wrap.appendChild(makeSection('Componentes', components, compConflicts, 'imp-c-'));
 
+        if (hasSiteConfig) {
+          const siteSec = document.createElement('div'); siteSec.className = 'imp-section';
+          siteSec.innerHTML = `<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#d4d4d4;cursor:pointer;">
+            <input type="checkbox" id="imp-site" checked style="width:14px;height:14px;cursor:pointer;accent-color:#3b82f6;">
+            <span>Configurações do site (SEO global, temas claro/escuro, favicon) — mescla com as atuais, sem apagar campos que o backup não tinha</span>
+          </label>`;
+          wrap.appendChild(siteSec);
+        }
+
         if (uploads.length > 0) {
           const u = document.createElement('div'); u.className = 'imp-uploads';
           u.textContent = '📎 ' + uploads.length + ' upload(s) incluído(s) no ZIP serão restaurados automaticamente.';
@@ -4406,6 +4425,10 @@
              servidor consegue distinguir "nada selecionado" de "campo ausente". */
           form.append('pages', selPages.join(','));
           form.append('components', selComps.join(','));
+          if (hasSiteConfig) {
+            const siteCb = wrap.querySelector('#imp-site');
+            form.append('site', (forceAll || (siteCb && siteCb.checked)) ? '1' : '0');
+          }
 
           try {
             const res  = await fetch('/api/import?action=commit', { method: 'POST', body: form });
@@ -4477,6 +4500,7 @@
       const pages = items.filter(function (i) { return i.indexOf('page:') === 0; }).map(function (i) { return i.slice(5); });
       const comps = items.filter(function (i) { return i.indexOf('component:') === 0; }).map(function (i) { return i.slice(10); });
       const media = items.filter(function (i) { return i.indexOf('upload:') === 0; });
+      const siteImported = items.indexOf('site:config') !== -1;
 
       function section(title, arr) {
         if (!arr.length) return '';
@@ -4495,6 +4519,7 @@
         + items.length + ' item(ns) no total.</p>'
         + section('Páginas', pages)
         + section('Componentes', comps)
+        + (siteImported ? '<p style="color:#6b7280;font-size:12px;margin:0;">⚙️ Configurações do site (SEO, temas, favicon) atualizadas.</p>' : '')
         + (Array.isArray(data.warnings) && data.warnings.length
             ? '<div style="background:#1c1007;border:1px solid #92400e;border-radius:6px;padding:10px 12px;'
               + 'font-size:12px;color:#fbbf24;line-height:1.6;">'

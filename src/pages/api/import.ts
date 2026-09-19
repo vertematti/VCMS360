@@ -58,6 +58,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     // Parse ZIP contents
     let zipPages: Record<string, any> = {};
     let zipComps: Record<string, any>  = {};
+    let zipSite: Record<string, any>  = {};
     const zipUploads: { name: string; data: Uint8Array }[] = [];
 
     for (const entry of entries) {
@@ -65,6 +66,8 @@ export const POST: APIRoute = async ({ request, url }) => {
         try { zipPages = JSON.parse(legacyToResources(dec.decode(entry.data))); } catch {}
       } else if (entry.name === 'data/components.json') {
         try { zipComps = JSON.parse(legacyToResources(dec.decode(entry.data))); } catch {}
+      } else if (entry.name === 'data/site.json') {
+        try { zipSite = JSON.parse(legacyToResources(dec.decode(entry.data))); } catch {}
       } else if (entry.name.startsWith('resources/') || entry.name.startsWith('uploads/')) {
         // Aceita backups novos (resources/) e antigos (uploads/); grava em resources.
         const prefix = entry.name.startsWith('resources/') ? 'resources/' : 'uploads/';
@@ -95,6 +98,7 @@ export const POST: APIRoute = async ({ request, url }) => {
         uploads:       zipUploads.map(u => u.name),
         pageConflicts,
         compConflicts,
+        hasSiteConfig: Object.keys(zipSite).length > 0,
       }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -172,6 +176,28 @@ export const POST: APIRoute = async ({ request, url }) => {
       }
       await fs.writeFile(path.join(cwd, 'src/data/pages.json'), JSON.stringify(existing, null, 2), 'utf-8');
       report.push(...selectedPages.filter(p => p in zipPages).map(p => `page:${p}`));
+    }
+
+    // ── site.json — merge raso, igual ao endpoint /api/site (POST) ──────────
+    // Não é uma sobrescrita total: campos ausentes no ZIP (ex.: backup mais
+    // antigo, de antes de algum campo existir) preservam o valor atual em vez
+    // de apagá-lo. Sem o campo `site` no form (cliente antigo), o padrão é
+    // importar SE o ZIP tiver essa configuração — diferente de páginas/
+    // componentes, aqui não há "itens" para listar, então não faz sentido
+    // herdar aquele mesmo padrão de "campo ausente = tudo"; o que importa é
+    // se há algo pra importar.
+    const includeSite = formData.has('site')
+      ? formData.get('site') === '1'
+      : Object.keys(zipSite).length > 0;
+    if (includeSite && Object.keys(zipSite).length > 0) {
+      const existingSite = await readJsonSafe(path.join(cwd, 'src/data/site.json'));
+      const mergedSite = {
+        ...existingSite,
+        ...zipSite,
+        organization: { ...(existingSite.organization || {}), ...(zipSite.organization || {}) },
+      };
+      await fs.writeFile(path.join(cwd, 'src/data/site.json'), JSON.stringify(mergedSite, null, 2), 'utf-8');
+      report.push('site:config');
     }
 
     // Uploads (sempre todos) — preserva subpastas, com trava anti-traversal
