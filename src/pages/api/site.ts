@@ -31,6 +31,13 @@ const DEFAULT_SITE = {
   themeLightBg: '',
   themeDarkBg: '',
   showThemeToggle: true,
+  // Favicon customizado, enviado pelo editor. Fica em public/resources/
+  // (servido pela rota SSR /resources/[...path], que lê o disco a cada
+  // requisição — necessário porque arquivos gravados em runtime não entram
+  // no "retrato" estático que o Astro tira de public/ ao iniciar). Vazio =
+  // usa os arquivos padrão do projeto (/favicon.ico, /favicon.svg).
+  faviconIco: '',
+  faviconPng: '',
   organization: { name: '', logo: '', sameAs: [] as string[] },
 };
 

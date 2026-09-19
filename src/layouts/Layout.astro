@@ -9,6 +9,8 @@ interface Props {
   defaultTheme?: string;  // tema aplicado a visitantes sem preferência salva ainda ('light' | 'dark')
   lightBg?: string;       // cor de fundo customizada do tema claro (vazio = padrão do DaisyUI)
   darkBg?: string;        // cor de fundo customizada do tema escuro (vazio = padrão do DaisyUI)
+  faviconIco?: string;    // caminho do favicon .ico customizado (vazio = /favicon.ico do projeto)
+  faviconPng?: string;    // caminho do favicon .png customizado (vazio = sem PNG customizado)
 }
 const {
   lang = 'pt-BR',
@@ -16,6 +18,8 @@ const {
   defaultTheme = 'light',
   lightBg = '',
   darkBg = '',
+  faviconIco = '',
+  faviconPng = '',
 } = Astro.props;
 
 // Sanitiza o tema padrão vindo de site.json — só 'light'/'dark' são temas
@@ -90,9 +94,24 @@ const themeBgCss = `
        com o próprio valor padrão não muda nada, então este bloco funciona
        tanto para quem customizou quanto para quem não customizou. -->
   <style is:inline set:html={themeBgCss}></style>
-  <!-- Favicons -->
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <!-- Favicons.
+       Sem favicon customizado: mantém os arquivos do próprio projeto
+       (.ico para navegadores antigos/aba, .svg escalável para os modernos).
+       Com favicon customizado: o .ico enviado assume o papel de fallback
+       universal (sizes="any" é o que faz navegadores modernos ignorá-lo em
+       favor de uma opção melhor, quando existe uma); o .png enviado vira
+       o ícone "moderno" preferencial E também o apple-touch-icon — o iOS/
+       iPadOS ignora .ico e .svg para atalho na tela de início, só aceita
+       PNG (idealmente 180×180px ou maior; enviando um PNG grande, o
+       dispositivo redimensiona sozinho, então um único PNG resolve tanto
+       desktop quanto mobile). -->
+  {faviconIco
+    ? <link rel="icon" href={faviconIco} sizes="any">
+    : <link rel="icon" href="/favicon.ico" sizes="any">}
+  {faviconPng
+    ? <link rel="icon" type="image/png" href={faviconPng}>
+    : !faviconIco && <link rel="icon" type="image/svg+xml" href="/favicon.svg">}
+  {faviconPng && <link rel="apple-touch-icon" href={faviconPng}>}
   {seoTags
     ? <Fragment set:html={seoTags} />
     : <title>Visual CMS</title>}

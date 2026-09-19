@@ -3643,6 +3643,36 @@
                 <span>Mostrar o alternador de tema (claro/escuro) no cabecalho</span>
               </label>
               <p class="cms-seo-hint">Desmarcar remove o icone de sol/lua do cabecalho em todas as paginas publicadas. O tema configurado acima continua valendo mesmo sem o icone.</p>
+
+              <h3 style="margin-top:12px;">Favicon</h3>
+              <div class="cms-seo-row">
+                <div>
+                  <label>Arquivo .ico (navegadores/abas — compatibilidade ampla)</label>
+                  <div style="display:flex;gap:8px;align-items:center;">
+                    ${v(site,'faviconIco') ? `<img id="st-faviconIcoPreview" src="${esc(v(site,'faviconIco'))}" style="width:28px;height:28px;object-fit:contain;background:#1e1e2d;border-radius:4px;flex:none;">` : `<img id="st-faviconIcoPreview" style="width:28px;height:28px;object-fit:contain;background:#1e1e2d;border-radius:4px;display:none;flex:none;">`}
+                    <input type="file" id="st-faviconIcoFile" accept=".ico,image/x-icon,image/vnd.microsoft.icon" style="flex:1;">
+                    <button type="button" id="st-faviconIcoRemove" class="ghost" style="flex:none;display:${v(site,'faviconIco')?'inline-flex':'none'};">Remover</button>
+                  </div>
+                  <input type="hidden" id="st-faviconIco" value="${esc(v(site,'faviconIco'))}">
+                </div>
+                <div>
+                  <label>Arquivo .png (icones modernos + atalho no iOS/Android)</label>
+                  <div style="display:flex;gap:8px;align-items:center;">
+                    ${v(site,'faviconPng') ? `<img id="st-faviconPngPreview" src="${esc(v(site,'faviconPng'))}" style="width:28px;height:28px;object-fit:contain;background:#1e1e2d;border-radius:4px;flex:none;">` : `<img id="st-faviconPngPreview" style="width:28px;height:28px;object-fit:contain;background:#1e1e2d;border-radius:4px;display:none;flex:none;">`}
+                    <input type="file" id="st-faviconPngFile" accept=".png,image/png" style="flex:1;">
+                    <button type="button" id="st-faviconPngRemove" class="ghost" style="flex:none;display:${v(site,'faviconPng')?'inline-flex':'none'};">Remover</button>
+                  </div>
+                  <input type="hidden" id="st-faviconPng" value="${esc(v(site,'faviconPng'))}">
+                </div>
+              </div>
+              <p class="cms-seo-hint">
+                Recomendado: envie os dois. O .ico garante compatibilidade com navegadores/leitores antigos que ainda pedem
+                <code>/favicon.ico</code> direto; o .png (quadrado, de preferência 512×512px ou pelo menos 180×180px) é usado
+                pelos navegadores modernos e também vira o ícone de atalho na tela de início do iOS e Android — o iOS em
+                particular ignora .ico e .svg para isso, só aceita PNG. Enviando só um dos dois, o outro cai no arquivo
+                padrão do projeto. O arquivo é enviado assim que você o escolhe; clique em "Salvar" (abaixo) para
+                vincular esse envio ao site.
+              </p>
               <h3 style="margin-top:12px;">Organizacao (JSON-LD global)</h3>
               <div class="cms-seo-row">
                 <div><label>Nome</label><input type="text" id="st-orgName" value="${esc(v(orgObj,'name'))}"></div>
@@ -3758,6 +3788,47 @@
             });
           } catch (e) {}
 
+          /* Upload do favicon (.ico / .png): envia assim que o arquivo é
+             escolhido, usando a mesma pasta de recursos (public/resources/
+             favicon/) e o mesmo endpoint que a Galeria já usa. O campo
+             oculto guarda a URL que será salva ao clicar em "Salvar". */
+          try {
+            [
+              { file: '#st-faviconIcoFile', hidden: '#st-faviconIco', preview: '#st-faviconIcoPreview', remove: '#st-faviconIcoRemove' },
+              { file: '#st-faviconPngFile', hidden: '#st-faviconPng', preview: '#st-faviconPngPreview', remove: '#st-faviconPngRemove' },
+            ].forEach(({ file, hidden, preview, remove }) => {
+              const fileEl = $(file), hiddenEl = $(hidden), previewEl = $(preview), removeEl = $(remove);
+              if (!fileEl || !hiddenEl || !previewEl || !removeEl) return;
+
+              fileEl.onchange = async () => {
+                const f = fileEl.files && fileEl.files[0];
+                if (!f) return;
+                try {
+                  if (typeof showToast === 'function') showToast('Enviando arquivo...', 'info');
+                  const src = await VCMSAssets.uploadToFolder(f, 'favicon');
+                  if (!src) throw new Error('upload sem retorno');
+                  hiddenEl.value = src;
+                  previewEl.src = src;
+                  previewEl.style.display = 'block';
+                  removeEl.style.display = 'inline-flex';
+                  if (typeof showToast === 'function') showToast('Arquivo enviado. Clique em Salvar para vincular ao site.', 'success');
+                } catch (err) {
+                  console.error(err);
+                  if (typeof showToast === 'function') showToast('Falha ao enviar o arquivo.', 'error');
+                } finally {
+                  fileEl.value = '';
+                }
+              };
+
+              removeEl.onclick = () => {
+                hiddenEl.value = '';
+                previewEl.removeAttribute('src');
+                previewEl.style.display = 'none';
+                removeEl.style.display = 'none';
+              };
+            });
+          } catch (e) {}
+
           $('#seo-save-site').onclick = async () => {
             const payload = {
               siteName: $('#st-siteName').value.trim(),
@@ -3775,6 +3846,8 @@
               themeLightBg: $('#st-themeLightBg').value.trim(),
               themeDarkBg: $('#st-themeDarkBg').value.trim(),
               showThemeToggle: $('#st-showThemeToggle').checked,
+              faviconIco: $('#st-faviconIco').value.trim(),
+              faviconPng: $('#st-faviconPng').value.trim(),
               organization: {
                 name: $('#st-orgName').value.trim(),
                 logo: $('#st-orgLogo').value.trim(),
