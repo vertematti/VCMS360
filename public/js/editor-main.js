@@ -234,6 +234,95 @@
       });
     })();
 
+    // ── Fundo do canvas por tema (claro/escuro) ─────────────────────────────
+    // No site publicado, o Layout.astro define explicitamente
+    // `:root[data-theme="…"] { background-color: … }` — sem isso, alternar
+    // pra escuro só muda a cor dos elementos que usam classes como
+    // bg-base-100 diretamente (cards, etc.); o fundo "cru" da própria página
+    // (o <body>/<html>, que não tem nenhuma classe de fundo aplicada) fica
+    // branco do mesmo jeito, porque nada na CSS do DaisyUI liga
+    // especificamente esse elemento à variável de tema.
+    // O canvas do editor não carrega o Layout.astro (é conteúdo puro dentro
+    // de um iframe about:blank), então precisa da mesma regra injetada aqui
+    // à mão — e precisa ser reaplicada toda vez que o iframe recarrega
+    // (troca de página), não só uma vez no carregamento inicial do editor.
+    const DAISYUI_LIGHT_BG = 'oklch(100% 0 0)';
+    const DAISYUI_DARK_BG  = 'oklch(25.33% .016 252.42)';
+    let canvasThemeBg = { light: DAISYUI_LIGHT_BG, dark: DAISYUI_DARK_BG };
+
+    function injectCanvasThemeBg() {
+      try {
+        const doc = editor.Canvas.getDocument();
+        if (!doc || !doc.head) return;
+        let st = doc.getElementById('cms-canvas-theme-bg');
+        if (!st) {
+          st = doc.createElement('style');
+          st.id = 'cms-canvas-theme-bg';
+          doc.head.appendChild(st);
+        }
+        st.textContent =
+          `html[data-theme="light"], html[data-theme="light"] body { background-color: ${canvasThemeBg.light}; }` +
+          `html[data-theme="dark"],  html[data-theme="dark"]  body { background-color: ${canvasThemeBg.dark}; }`;
+      } catch (e) { /* canvas ainda não pronto */ }
+    }
+    editor.on('canvas:frame:load:head', injectCanvasThemeBg);
+    editor.on('canvas:frame:load:body', injectCanvasThemeBg);
+    editor.on('load', injectCanvasThemeBg);
+
+    // ── Tema padrão do canvas ao carregar ────────────────────────────────
+    // O toggle de tema já funciona sozinho dentro do canvas — a lib
+    // theme-change está carregada lá e lê o mesmo localStorage do site
+    // publicado (o iframe do canvas é about:blank, que herda a origem do
+    // documento pai). O que faltava é o EQUIVALENTE, no canvas, do fallback
+    // que o Layout.astro já faz no site publicado: se ainda não existe
+    // nenhuma preferência salva, aplicar o "tema padrão de carregamento"
+    // configurado — sem isso, o canvas simplesmente nasce no tema claro
+    // (padrão do DaisyUI) toda vez que não há nada no localStorage ainda,
+    // e só refletia o escuro depois de clicar em Salvar nas configurações
+    // (que é quando esse fallback rodava, e só então).
+    // Igual ao script anti-flash do Layout.astro: só age quando NÃO há
+    // preferência salva — se o usuário já tiver escolhido um tema (seja no
+    // site publicado, seja clicando no toggle dentro do próprio canvas),
+    // essa escolha sempre prevalece.
+    let canvasDefaultTheme = 'light';
+
+    function applyCanvasDefaultTheme() {
+      try {
+        const cdoc = editor.Canvas.getDocument();
+        const cwin = (editor.Canvas.getWindow && editor.Canvas.getWindow()) || (cdoc && cdoc.defaultView);
+        if (!cdoc || !cdoc.documentElement || !cwin) return;
+        let t;
+        try { t = cwin.localStorage.getItem('theme'); } catch (e) { t = null; }
+        if (!t) {
+          t = canvasDefaultTheme;
+          try { cwin.localStorage.setItem('theme', t); } catch (e) {}
+        }
+        cdoc.documentElement.setAttribute('data-theme', t);
+        cdoc.documentElement.style.colorScheme = (t === 'dark') ? 'dark' : 'light';
+      } catch (e) { /* canvas ainda não pronto */ }
+    }
+    editor.on('canvas:frame:load:head', applyCanvasDefaultTheme);
+    editor.on('canvas:frame:load:body', applyCanvasDefaultTheme);
+    editor.on('load', applyCanvasDefaultTheme);
+
+    // Busca a configuração do site (tema padrão + cores) uma vez, no
+    // carregamento do editor, para já aplicar certo mesmo antes de abrir a
+    // aba de configurações — e reaplica em cima do canvas que já pode ter
+    // carregado primeiro (a ordem entre este fetch e os eventos acima não é
+    // garantida).
+    (async function loadCanvasThemeFromSite() {
+      try {
+        const s = await (await fetch('/api/site')).json();
+        canvasThemeBg = {
+          light: (s.themeLightBg || '').trim() || DAISYUI_LIGHT_BG,
+          dark:  (s.themeDarkBg  || '').trim() || DAISYUI_DARK_BG,
+        };
+        canvasDefaultTheme = (s.defaultTheme === 'dark') ? 'dark' : 'light';
+        injectCanvasThemeBg();
+        applyCanvasDefaultTheme();
+      } catch (e) {}
+    })();
+
     // ══════════════════════════════════════════════════════════════════════════
     // ── Virtual Tour 360° Component (Pannellum)
     // ══════════════════════════════════════════════════════════════════════════
@@ -3856,7 +3945,30 @@
             };
             try {
               const r = await fetch('/api/site', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-              if (r.ok) { site = (await r.json()).site || payload; if (typeof showToast==='function') showToast('Configuração do site salva!', 'success'); upd(); }
+              if (r.ok) {
+                site = (await r.json()).site || payload;
+                if (typeof showToast==='function') showToast('Configuração do site salva!', 'success');
+                upd();
+                // Aplica o tema (e a cor de fundo correspondente) recém-salvos
+                // no canvas imediatamente, sem esperar um F5 ou troca de página.
+                try {
+                  if (typeof canvasThemeBg === 'object') {
+                    canvasThemeBg = {
+                      light: (payload.themeLightBg || '').trim() || canvasThemeBg.light,
+                      dark:  (payload.themeDarkBg  || '').trim() || canvasThemeBg.dark,
+                    };
+                  }
+                  if (typeof injectCanvasThemeBg === 'function') injectCanvasThemeBg();
+
+                  const cdoc = editor.Canvas.getDocument();
+                  const cwin = (editor.Canvas.getWindow && editor.Canvas.getWindow()) || (cdoc && cdoc.defaultView);
+                  if (cdoc && cdoc.documentElement) {
+                    cdoc.documentElement.setAttribute('data-theme', payload.defaultTheme);
+                    cdoc.documentElement.style.colorScheme = payload.defaultTheme === 'dark' ? 'dark' : 'light';
+                  }
+                  if (cwin && cwin.localStorage) cwin.localStorage.setItem('theme', payload.defaultTheme);
+                } catch (e) { /* canvas pode não estar pronto ainda; sem problema, não é crítico */ }
+              }
               else if (typeof showToast==='function') showToast('Erro ao salvar config do site.', 'error');
             } catch(e){ if (typeof showToast==='function') showToast('Erro de rede ao salvar config.', 'error'); }
           };
