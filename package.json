@@ -32,10 +32,10 @@
     "setup:desktop": "npm install"
   },
   "dependencies": {
-    "@astrojs/node": "^11.1.5",
+    "@astrojs/node": "^11.1.7",
     "@tailwindcss/vite": "^4.2.4",
     "aframe": "^1.8.0",
-    "astro": "^7.3.2",
+    "astro": "^7.3.8",
     "cheerio": "^1.2.0",
     "daisyui": "^5.7.32",
     "grapesjs": "^0.22.15",
