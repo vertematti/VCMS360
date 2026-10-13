@@ -19,7 +19,7 @@ import path from 'node:path';
 export const prerender = false;
 
 // Recursos exclusivos da interface do editor — não vão para o site publicado.
-const EXCLUDE = ['glv.png', 'openmaker.png', 'VisualCMS360header.png', 'editor', 'js'];
+const EXCLUDE = ['glv.png', 'openmaker.png', 'VisualCMS360header.png', 'editor', 'js', 'vendor/tailwindcss-browser.js', 'vendor/tailwind-play-stub.js'];
 
 async function exists(p: string): Promise<boolean> {
   try { await fs.access(p); return true; } catch { return false; }

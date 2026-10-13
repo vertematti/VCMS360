@@ -7,6 +7,7 @@ import path from 'node:path';
 import { broadcast } from '../events';
 import { findPagesUsingComponent, syncPagesForComponent, type PageRecord } from '../../../lib/componentSync';
 
+import { refreshTailwindSources } from '../../../lib/tailwindRefresh';
 export const prerender = false;
 
 const filePath = () => path.resolve(process.cwd(), 'src/data/components.json');
@@ -83,6 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (affectedPages.length > 0) {
       await fs.writeFile(pagesPath(), JSON.stringify(pages, null, 2), 'utf-8');
     }
+    await refreshTailwindSources();
 
     // Broadcast real-time update to all connected editors (mantém os
     // canvases abertos em sincronia imediata, além do que já foi gravado).

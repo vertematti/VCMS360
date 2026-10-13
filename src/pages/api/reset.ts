@@ -5,6 +5,7 @@ import type { APIRoute } from 'astro';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { refreshTailwindSources } from '../../lib/tailwindRefresh';
 export const prerender = false;
 
 export const POST: APIRoute = async () => {
@@ -34,6 +35,7 @@ export const POST: APIRoute = async () => {
 
     // ── 2. Resetar components.json ─────────────────────────────────────────────
     await fs.writeFile(componentsPath, JSON.stringify({}, null, 2), 'utf-8');
+    await refreshTailwindSources();
     summary.components = 1;
 
     // ── 3. Apagar uploads em TODAS as pastas (dev + dist) ─────────────────────

@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import * as cheerio from 'cheerio';
 
+import { refreshTailwindSources } from '../../lib/tailwindRefresh';
 export const prerender = false;
 const cwd = process.cwd();
 
@@ -175,6 +176,7 @@ export const POST: APIRoute = async ({ request, url }) => {
         existing[k] = page;
       }
       await fs.writeFile(path.join(cwd, 'src/data/pages.json'), JSON.stringify(existing, null, 2), 'utf-8');
+      await refreshTailwindSources();
       report.push(...selectedPages.filter(p => p in zipPages).map(p => `page:${p}`));
     }
 

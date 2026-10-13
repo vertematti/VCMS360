@@ -75,6 +75,17 @@ const files = [
     label: 'daisyui → daisyui/daisyui.css',
   },
   {
+    // Tailwind v4 "browser build" (JIT no navegador): usado SÓ dentro do canvas
+    // do editor, no lugar do Tailwind v3 do CDN (cdn.tailwindcss.com) que o
+    // plugin grapesjs-tailwind injeta por padrão. O site publicado é compilado
+    // com Tailwind v4 (@tailwindcss/vite), então o canvas precisa do MESMO motor
+    // — senão espaçamentos, ring/border/shadow e o grid saem diferentes entre
+    // o editor e o site. Funciona offline e fica na mesma versão do build.
+    src:   resolve(root, 'node_modules', '@tailwindcss', 'browser', 'dist', 'index.global.js'),
+    dest:  resolve(dest, 'tailwindcss-browser.js'),
+    label: '@tailwindcss/browser → tailwindcss-browser.js',
+  },
+  {
     // theme-change: liga os controles de alternância de tema (o toggle
     // light/dark do Header DaisyUI), tanto no site publicado (incluído via
     // Layout.astro) quanto no canvas do editor GrapesJS (pra já poder

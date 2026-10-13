@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@astrojs/node": "^11.1.7",
+    "@tailwindcss/browser": "^4.3.1",
     "@tailwindcss/vite": "^4.2.4",
     "aframe": "^1.8.0",
     "astro": "^7.3.8",

@@ -54,6 +54,8 @@ const EXCLUDE = [
   'openmaker.png',
   'VisualCMS360header.png',
   'editor',   // interface do editor — depende de Node/API, não vai no site estático
+  'vendor/tailwindcss-browser.js',   // Tailwind v4 do canvas do editor — o site publicado usa o CSS compilado
+  'vendor/tailwind-play-stub.js',
   'js',       // scripts do editor (editor-main.js, components-main.js) — usados só pelo editor, não pelas páginas publicadas
 ];
 

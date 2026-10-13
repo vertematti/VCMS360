@@ -5,6 +5,7 @@ import type { APIRoute } from 'astro';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { refreshTailwindSources } from '../../lib/tailwindRefresh';
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
@@ -39,6 +40,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Save back to file
     await fs.writeFile(filePath, JSON.stringify(pages, null, 2), 'utf-8');
+    await refreshTailwindSources();
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

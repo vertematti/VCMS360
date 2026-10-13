@@ -6,6 +6,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { broadcast } from '../events';
 
+import { refreshTailwindSources } from '../../../lib/tailwindRefresh';
 export const prerender = false;
 
 const filePath = () => path.resolve(process.cwd(), 'src/data/components.json');
@@ -25,6 +26,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     delete components[name];
     await fs.writeFile(filePath(), JSON.stringify(components, null, 2), 'utf-8');
+    await refreshTailwindSources();
 
     // Broadcast deletion so editors remove the block from their panel
     broadcast('component:deleted', { name });

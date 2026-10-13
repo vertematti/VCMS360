@@ -49,9 +49,16 @@
     }
 
     // ── GrapesJS init ──────────────────────────────────────────────────────────
-    var pluginTailwind   = typeof grapesjs !== 'undefined' && grapesjs.plugins && grapesjs.plugins.get
+    var pluginTailwindRaw = typeof grapesjs !== 'undefined' && grapesjs.plugins && grapesjs.plugins.get
       ? grapesjs.plugins.get('grapesjs-tailwind')   || window['grapesjs-tailwind']
       : window['grapesjs-tailwind'];
+    // Ver comentário equivalente em editor-main.js: o plugin injetaria o Tailwind v3
+    // do CDN no canvas; apontamos para um stub e usamos o Tailwind v4 (canvas.scripts).
+    var pluginTailwind = pluginTailwindRaw && function (ed, opts) {
+      return pluginTailwindRaw(ed, Object.assign({}, opts, {
+        tailwindPlayCdn: window.location.origin + '/vendor/tailwind-play-stub.js',
+      }));
+    };
     var pluginBlocksBasic = window['gjs-blocks-basic'];
 
     var editor;
@@ -73,6 +80,8 @@
           plugins:        cfg.plugins,
           canvas: {
             scripts: [
+              // Tailwind v4 (mesmo motor do build do site) — ver copy-vendor.mjs.
+              window.location.origin + '/vendor/tailwindcss-browser.js',
               window.location.origin + '/vendor/jquery.min.js',
               window.location.origin + '/vendor/theme-change/theme-change.js',
             ],
@@ -205,6 +214,8 @@
           },
         });
         console.log('[CMS Comp] GrapesJS iniciado com:', cfg.label);
+        // Cores do DaisyUI como tokens do Tailwind v4 no canvas (ver canvas-tailwind.js).
+        if (window.VCMS_setupCanvasTailwind) window.VCMS_setupCanvasTailwind(editor);
         break;
       } catch(err) {
         console.warn('[CMS Comp] Falha ao iniciar com', cfg.label, ':', err.message);
