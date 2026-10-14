@@ -690,10 +690,10 @@
   },
   "links": {
     "name": "links",
-    "html": "<body id=\"ikyw\"><div class=\"flex items-center justify-center gap-3\"><a href=\"https://github.com/vertematti\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"GitHub\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-brands fa-github text-lg\"></i></a><a href=\"https://www.instagram.com/gerson.vertematti\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Instagram\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-brands fa-instagram text-lg\"></i></a><a href=\"https://www.youtube.com/@GersonLuisVertematti\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"YouTube\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-brands fa-youtube text-lg\"></i></a><a href=\"mailto:gersonlv@gmail.com\" aria-label=\"E-mail\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-solid fa-envelope text-lg\"></i></a><a href=\"https://www.linkedin.com/in/gersonlv\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"LinkedIn\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-brands fa-linkedin-in text-lg\"></i></a><a href=\"tel:+551198142-9680\" aria-label=\"Telefone\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-solid fa-phone text-lg\"></i></a></div></body>",
+    "html": "<body id=\"ikyw\"><div class=\"flex items-center justify-center gap-3\"><a href=\"https://github.com/vertematti\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"GitHub\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-brands fa-github text-2xl\"></i></a><a href=\"https://www.instagram.com/gerson.vertematti\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Instagram\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-brands fa-instagram text-2xl\"></i></a><a href=\"https://www.youtube.com/@GersonLuisVertematti\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"YouTube\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-brands fa-youtube text-2xl\"></i></a><a href=\"mailto:gersonlv@gmail.com\" aria-label=\"E-mail\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-solid fa-envelope text-2xl\"></i></a><a href=\"https://www.linkedin.com/in/gersonlv\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"LinkedIn\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-brands fa-linkedin-in text-2xl\"></i></a><a href=\"tel:+551198142-9680\" aria-label=\"Telefone\" class=\"btn btn-square bg-base-content text-base-100 border-0 hover:opacity-80\"><i class=\"fa-solid fa-phone text-2xl\"></i></a></div></body>",
     "js": "",
     "jquery": "",
-    "css": "* { box-sizing: border-box; } body {margin: 0;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}",
+    "css": "* { box-sizing: border-box; } body {margin: 0;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}*{box-sizing:border-box;}body{margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;}",
     "projectData": {
       "dataSources": [],
       "assets": [
@@ -708,6 +708,40 @@
         }
       ],
       "styles": [
+        {
+          "selectors": [],
+          "selectorsAdd": "*",
+          "style": {
+            "box-sizing": "border-box"
+          }
+        },
+        {
+          "selectors": [],
+          "selectorsAdd": "body",
+          "style": {
+            "margin-top": "0px",
+            "margin-right": "0px",
+            "margin-bottom": "0px",
+            "margin-left": "0px"
+          }
+        },
+        {
+          "selectors": [],
+          "selectorsAdd": "*",
+          "style": {
+            "box-sizing": "border-box"
+          }
+        },
+        {
+          "selectors": [],
+          "selectorsAdd": "body",
+          "style": {
+            "margin-top": "0px",
+            "margin-right": "0px",
+            "margin-bottom": "0px",
+            "margin-left": "0px"
+          }
+        },
         {
           "selectors": [],
           "selectorsAdd": "*",
@@ -809,7 +843,7 @@
                             "classes": [
                               "fa-brands",
                               "fa-github",
-                              "text-lg"
+                              "text-2xl"
                             ]
                           }
                         ]
@@ -836,7 +870,7 @@
                             "classes": [
                               "fa-brands",
                               "fa-instagram",
-                              "text-lg"
+                              "text-2xl"
                             ]
                           }
                         ]
@@ -863,7 +897,7 @@
                             "classes": [
                               "fa-brands",
                               "fa-youtube",
-                              "text-lg"
+                              "text-2xl"
                             ]
                           }
                         ]
@@ -888,7 +922,7 @@
                             "classes": [
                               "fa-solid",
                               "fa-envelope",
-                              "text-lg"
+                              "text-2xl"
                             ]
                           }
                         ]
@@ -915,7 +949,7 @@
                             "classes": [
                               "fa-brands",
                               "fa-linkedin-in",
-                              "text-lg"
+                              "text-2xl"
                             ]
                           }
                         ]
@@ -940,7 +974,7 @@
                             "classes": [
                               "fa-solid",
                               "fa-phone",
-                              "text-lg"
+                              "text-2xl"
                             ]
                           }
                         ]
@@ -963,6 +997,6 @@
       ],
       "symbols": []
     },
-    "updatedAt": "2026-10-12T22:53:00.046Z"
+    "updatedAt": "2026-10-14T22:34:27.373Z"
   }
 }
